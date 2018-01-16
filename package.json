@@ -20,5 +20,13 @@
   "bugs": {
     "url": "https://github.com/Web-Moviles-Spring18/Lab-Web/issues"
   },
-  "homepage": "https://github.com/Web-Moviles-Spring18/Lab-Web#readme"
+  "homepage": "https://github.com/Web-Moviles-Spring18/Lab-Web#readme",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "cors": "^2.8.4",
+    "dotenv": "^4.0.0",
+    "express": "^4.16.2",
+    "express-jwt": "^5.3.0",
+    "mongoose": "^4.13.9"
+  }
 }
