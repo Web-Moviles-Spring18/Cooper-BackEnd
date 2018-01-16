@@ -1,0 +1,24 @@
+{
+  "name": "cooper-api",
+  "version": "1.0.0",
+  "description": "Cooper's API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Web-Moviles-Spring18/Lab-Web.git"
+  },
+  "keywords": [
+    "api",
+    "nodejs",
+    "express"
+  ],
+  "author": "Web-Moviles-Spring18",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Web-Moviles-Spring18/Lab-Web/issues"
+  },
+  "homepage": "https://github.com/Web-Moviles-Spring18/Lab-Web#readme"
+}
