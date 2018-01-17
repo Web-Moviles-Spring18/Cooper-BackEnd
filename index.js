@@ -23,6 +23,7 @@ app.use('/api', routes);
 app.use((req, res, next) => {
   const err = new Error('Not Found');
   err.status = 404;
+  res.status(404).send('Not Found');
   next(err);
 });
 
