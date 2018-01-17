@@ -5,9 +5,12 @@ const dotenv = require('dotenv').config();
 const cors = require('cors');
 const ddos = require('ddos');
 
-const routes = require('./routes');
+const routes = require('./routes/users.js');
 
 const app = express();
+
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.json());
 
 // Prevent DoS attack using ddos package
 // Every request per user increments an internal count. When the count exceeds the limit,
