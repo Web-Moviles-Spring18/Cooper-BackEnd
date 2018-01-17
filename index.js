@@ -5,7 +5,7 @@ const dotenv = require('dotenv').config();
 const cors = require('cors');
 const ddos = require('ddos');
 
-const routes = require('./routes/users.js');
+const router = require('./routes');
 
 const app = express();
 
@@ -20,7 +20,7 @@ app.use(bodyParser.json());
 const ddos_opt = new ddos({burst: 10, limit: 15});
 app.use(ddos_opt.express);
 
-app.use('/api', routes);
+app.use('/api', router);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {

@@ -26,31 +26,32 @@ const UserSchema = mongoose.Schema({
 
 UserSchema.plugin(uniqueValidator, { message: 'is already taken.' });
 
-UserSchema.methods.setPassword = (password) => {
-  this.salt = crypto.randomBytes(16).toString('hex');
-  this.hash = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex');
+UserSchema.statics.setPassword = (user, password) => {
+  if (!password) return console.error('Empty password');
+  user.salt = crypto.randomBytes(16).toString('hex');
+  user.hash = crypto.pbkdf2Sync(password, user.salt, 10000, 512, 'sha512').toString('hex');
 };
 
-UserSchema.methods.validPassword = (password) => (
-  crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex') === this.hash
+UserSchema.statics.validPassword = (user, password) => (
+  crypto.pbkdf2Sync(password, user.salt, 10000, 512, 'sha512').toString('hex') === user.hash
 );
 
-UserSchema.methods.generateJWT = () => {
+UserSchema.statics.generateJWT = (user) => {
   var today = new Date();
   var exp = new Date(today);
   exp.setDate(today.getDate() + 60);
 
   return jwt.sign({
-    id: this._id,
-    username: this.username,
+    id: user._id,
+    username: user.username,
     exp: parseInt(exp.getTime() / 1000),
   }, secret);
 };
 
-UserSchema.methods.toAuthJSON = () => ({
-  username: this.username,
-  email: this.email,
-  token: this.generateJWT()
+UserSchema.statics.toAuthJSON = (user) => ({
+  username: user.username,
+  email: user.email,
+  token: user.generateJWT()
 });
 
-mongoose.model('User', UserSchema);
+module.exports = mongoose.model('User', UserSchema);
