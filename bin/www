@@ -14,6 +14,7 @@ server.on('error', onError);
 server.on('listening', onListening);
 
 const dbUri = `mongodb://${host}/cooper_${nodeEnv}`;
+mongoose.Promise = require('bluebird');
 mongoose.connect(dbUri, {useMongoClient: true});
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
