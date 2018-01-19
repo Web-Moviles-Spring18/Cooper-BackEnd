@@ -9,7 +9,7 @@ const router = require('./routes');
 
 const app = express();
 
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Prevent DoS attack using ddos package
@@ -17,7 +17,7 @@ app.use(bodyParser.json());
 //  The requests are denied with a HTTP 429 Too Many Requests.
 // the parameters burst/limit is reasonable for humans use.
 
-const ddos_opt = new ddos({burst: 10, limit: 15});
+const ddos_opt = new ddos({ burst: 10, limit: 15 });
 app.use(ddos_opt.express);
 
 app.use('/api', router);
