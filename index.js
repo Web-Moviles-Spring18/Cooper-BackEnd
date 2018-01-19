@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv').config();
 const cors = require('cors');
 const ddos = require('ddos');
+const { NOT_FOUND } = require('./constants/responseConstants');
 
 const router = require('./routes');
 
@@ -20,13 +21,13 @@ app.use(bodyParser.json());
 const ddos_opt = new ddos({ burst: 10, limit: 15 });
 app.use(ddos_opt.express);
 
-app.use('/api', router);
+app.use(router);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
-  const err = new Error('Not Found');
+  const err = new Error(NOT_FOUND);
   err.status = 404;
-  res.status(404).send('Not Found');
+  res.status(404).send(NOT_FOUND);
   next(err);
 });
 

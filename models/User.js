@@ -8,7 +8,7 @@ const UserSchema = mongoose.Schema({
   username: {
     type: String,
     required: [true, "can't be blank"],
-    match: [/^[a-zA-Z0-9]+$/, 'is invalid'],
+    match: [/^[a-z\.A-Z0-9]+$/, 'is invalid'],
     unique: true,
     index: true
   },
@@ -17,7 +17,7 @@ const UserSchema = mongoose.Schema({
     lowercase: true,
     unique: true,
     required: [true, "can't be blank"],
-    match: [/\S+@\S+\S+/, 'is invalid'],
+    match: [/\S+@\S+\.\S+/, 'is invalid'],
     index: true
   },
   hash: String,

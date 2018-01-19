@@ -1,5 +1,12 @@
 const User = require('../models/User.js');
 const jwt = require('jsonwebtoken');
+const {
+  MISSING_PASSWORD,
+  SIGNIN_SUCCESS,
+  MISSING_USERNAME,
+  SERVER_ERROR,
+  WRONG_CREDENTIALS
+} = require('../constants/responseConstants');
 
 const secret = process.env.SECRET;
 
@@ -8,16 +15,16 @@ module.exports = {
     return new Promise((resolve) => {
       const {username, email, password} = req.body;
       if (!password) {
-        return res.status(401).send({message: 'Empty password'});
+        return res.status(400).send(MISSING_PASSWORD);
       }
       const user = User({username, email});
       User.setPassword(user, password);
       user.save((err, user) => {
         if (err) {
-          res.status(500).send({ message: err.message });
+          res.status(500).send(err.message);
           return console.error(err);
         }
-        res.status(200).send({ message: 'User created' });
+        res.status(200).send(SIGNIN_SUCCESS);
         resolve('Success');
       });
     }).catch((err) => {
@@ -28,14 +35,13 @@ module.exports = {
   login(req, res) {
     return new Promise((resolve) => {
       const {username, email, password} = req.body;
-      if (!email && !username) {
-        res.status(301).send({ message: 'No id' });
+      if (!username) {
+        res.status(400).send(MISSING_USERNAME);
         resolve('Failed');
       }
-      const id = !!email ? email : username;
-      User.findOne({ email }, 'hash salt', (err, user) => {
+      User.findOne({ username }, 'hash salt', (err, user) => {
         if (err) {
-          res.status(500).send({ message: 'Something went wrong.' });
+          res.status(500).send(SERVER_ERROR);
         }
         if (User.validPassword(user, password)) {
           const token = jwt.sign({
@@ -46,7 +52,7 @@ module.exports = {
           });
           return res.status(200).json({ token });
         } else {
-          res.status(400).send({ message: 'Email or password incorrect.' });
+          res.status(400).send(WRONG_CREDENTIALS);
         }
         resolve('Success');
       });
