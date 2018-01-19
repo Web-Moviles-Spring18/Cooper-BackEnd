@@ -17,7 +17,7 @@ module.exports = {
           res.status(500).send({ message: err.message });
           return console.error(err);
         }
-        res.status(200).send(user);
+        res.status(200).send({ message: 'User created' });
         resolve('Success');
       });
     }).catch((err) => {
