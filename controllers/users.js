@@ -15,18 +15,22 @@ module.exports = {
     return new Promise((resolve) => {
       const {username, email, password} = req.body;
       if (!password) {
-        return res.status(400).send(MISSING_PASSWORD);
-      }
-      const user = User({username, email});
-      User.setPassword(user, password);
-      user.save((err, user) => {
-        if (err) {
-          res.status(500).send(err.message);
-          return console.error(err);
-        }
-        res.status(200).send(SIGNIN_SUCCESS);
+        res.status(400).send(MISSING_PASSWORD);
         resolve('Success');
-      });
+      } else if (!username || !email) {
+        res.status(400).send(MISSING_USERNAME);
+      } else {
+        const user = User({username, email});
+        User.setPassword(user, password);
+        user.save((err, user) => {
+          if (err) {
+            return res.status(400).send(err.errors);
+            resolve('Success');
+          }
+          res.status(200).send(SIGNIN_SUCCESS);
+          resolve('Success');
+        });
+      }
     }).catch((err) => {
       res.status(301).send(err.message);
     });
