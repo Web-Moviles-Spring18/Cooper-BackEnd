@@ -111,5 +111,71 @@ describe('Users', () => {
         });
       });
 
+      it('Should tell you that there is no username or password ', done => {
+        const user = {
+          username: ' ',
+          password: ' '
+        };
+        chai.request(server).post('/users/login').send(user).end((err, res) => {
+          res.should.have.status(400);
+          res.text.should.be.a('string');
+          res.text.should.be.eql(messages.MISSING_PASSWORD);
+          done();
+        });
+      });
+
+      it('Should tell you username or incorrect password', done => {
+        const user = {
+          username: 'test.username3',
+          password: 'test.password2 '
+        };
+        chai.request(server).post('/users/login').send(user).end((err, res) => {
+          res.should.have.status(400);
+          res.text.should.be.a('string');
+          res.text.should.be.eql(messages.MISSING_PASSWORD);
+          done();
+        });
+      });
+      
+      it('Shoul tell you correct username but incorrect password', done => {
+        const user = {
+          username: 'test.username',
+          password: 'test.password2 '
+        };
+        chai.request(server).post('/users/login').send(user).end((err, res) => {
+          res.should.have.status(400);
+          res.text.should.be.a('string');
+          res.text.should.be.eql(messages.MISSING_PASSWORD);
+          done();
+        });
+      });
+
+      it('Shoul tell you correct password or incorrect username', done => {
+        const user = {
+          username: 'test.username3',
+          password: 'test.password '
+        };
+        chai.request(server).post('/users/login').send(user).end((err, res) => {
+          res.should.have.status(400);
+          res.text.should.be.a('string');
+          res.text.should.be.eql(messages.MISSING_PASSWORD);
+          done();
+        });
+      });
+
+      it('Shoul tell you correct password and correct username', done => {
+        const user = {
+          username: 'test.username',
+          password: 'test.password '
+        };
+        chai.request(server).post('/users/login').send(user).end((err, res) => {
+          res.should.have.status(400);
+          res.text.should.be.a('string');
+          res.text.should.be.eql(messages.MISSING_PASSWORD);
+          done();
+        });
+      });
+
+
     });
 });
