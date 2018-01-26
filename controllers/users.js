@@ -46,6 +46,8 @@ module.exports = {
       User.findOne({ username }, 'hash salt', (err, user) => {
         if (err) {
           res.status(500).send(SERVER_ERROR);
+        } else if(!user) {
+          res.status(400).send(WRONG_CREDENTIALS);
         }
         if (User.validPassword(user, password)) {
           const token = jwt.sign({
