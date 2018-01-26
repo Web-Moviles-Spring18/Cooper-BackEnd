@@ -110,7 +110,7 @@ describe('Users', () => {
           done();
         });
       });
-
+      
       it('Should tell you that there is no username or password ', done => {
         const user = {
           username: ' ',
@@ -174,8 +174,7 @@ describe('Users', () => {
           res.text.should.be.eql(messages.MISSING_PASSWORD);
           done();
         });
-      });
-
+      });   
 
     });
 });

@@ -3,12 +3,17 @@ const uniqueValidator = require('mongoose-unique-validator');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const secret = process.env.SECRET;
+const {
+  INVALID_USERNAME,
+  INVALID_EMAIL,
+  USERNAME_OR_EMAIL_TAKEN
+} = require('../constants/responseConstants');
 
 const UserSchema = mongoose.Schema({
   username: {
     type: String,
     required: [true, "can't be blank"],
-    match: [/^[a-z\.A-Z0-9]+$/, 'is invalid'],
+    match: [/^[a-z\.A-Z0-9]+$/, INVALID_USERNAME],
     unique: true,
     index: true
   },
@@ -17,14 +22,14 @@ const UserSchema = mongoose.Schema({
     lowercase: true,
     unique: true,
     required: [true, "can't be blank"],
-    match: [/\S+@\S+\.\S+/, 'is invalid'],
+    match: [/\S+@\S+\.\S+/, INVALID_EMAIL],
     index: true
   },
   hash: String,
   salt: String
 }, { timestaps: true });
 
-UserSchema.plugin(uniqueValidator, { message: 'is already taken.' });
+UserSchema.plugin(uniqueValidator, { message: USERNAME_OR_EMAIL_TAKEN });
 
 UserSchema.statics.setPassword = (user, password) => {
   if (!password) return console.error('Empty password');
