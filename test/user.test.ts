@@ -1,7 +1,7 @@
 import * as request from "supertest";
 import * as app from "../src/app";
 
-let chai = require('chai');
+import * as chai from "chai";
 let expect = chai.expect;
 
 describe("POST /login", () => {
