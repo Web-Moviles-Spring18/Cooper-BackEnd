@@ -1,28 +1,35 @@
-# OS X
-.DS_Store*
-Icon?
-._*
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Linux
-.directory
-*~
-
-
-# npm
-node_modules
-package-lock.json
+lib-cov
+*.seed
 *.log
+*.csv
+*.dat
+*.out
+*.pid
 *.gz
+*.swp
+
+pids
+logs
+results
+tmp
+
+#Build
+public/css/main.css
+
+# API keys and secrets
 .env
 
+# Dependency directory
+node_modules
+bower_components
 
-# Coveralls
-coverage
+# Editors
+.idea
+*.iml
 
-# Benchmarking
-benchmarks/graphs
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Ignore built ts files
+dist/**/*

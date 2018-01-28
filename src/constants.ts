@@ -1,0 +1,9 @@
+export const NOT_FOUND = "Not Found";
+export const MISSING_PASSWORD = "Empty password.";
+export const INVALID_USERNAME = "Invalid Username, please use only alphanumeric characters.";
+export const INVALID_EMAIL = "Invalid email.";
+export const EMAIL_TAKEN = "Username or email is already taken.";
+export const SIGNIN_SUCCESS = "User created.";
+export const MISSING_USERNAME = "No username or email.";
+export const SERVER_ERROR = "Something went wrong.";
+export const WRONG_CREDENTIALS = "Email or password incorrect.";
