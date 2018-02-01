@@ -12,16 +12,56 @@ import * as passport from "passport";
 import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
 
-const MongoStore = mongo(session);
-
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
+
+import * as neo from "./utils/neo4jSession";
+import * as bcrypt from "bcrypt-nodejs";
+import * as crypto from "crypto";
+
+const MongoStore = mongo(session);
+
+const userSchema = new neo.Schema({
+  email: {
+    type: String,
+    index: true
+  },
+  password: String,
+  age: Number,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
+  name: String,
+  gender: String,
+  location: String,
+  picture: String
+});
+
+userSchema.pre("save", function hashPassword(next: Function) {
+  const user = this;
+  bcrypt.genSalt(10, (err, salt) => {
+    if (err) { return next(err); }
+    bcrypt.hash(user.password, salt, undefined, (err: mongoose.Error, hash) => {
+      if (err) { return next(err); }
+      user.password = hash;
+      next();
+    });
+  });
+});
+
+const User = neo.model("User", userSchema);
+const firstUser = new User({
+  name: "Hermes",
+  email: "hermes.espinola@gmail.com",
+  password: "qwerty",
+  age: 20
+});
+
+firstUser.save();
 
 // Controllers (route handlers)
 import * as userController from "./controllers/user";
 import * as apiController from "./controllers/api";
 import * as contactController from "./controllers/contact";
-
 
 // API keys and Passport configuration
 import * as passportConfig from "./config/passport";
@@ -36,7 +76,7 @@ mongoose.connect(mongoUrl, {useMongoClient: true}).then(
   () => { console.log("MongoDB connection successful. "); },
 ).catch(err => {
   console.log("MongoDB connection error. Please make sure MongoDB is running. " + err);
-  // process.exit();
+  process.exit();
 });
 
 // Express configuration
