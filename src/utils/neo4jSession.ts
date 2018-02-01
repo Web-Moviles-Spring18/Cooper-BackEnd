@@ -59,11 +59,27 @@ export class Schema {
   properties: SchemaProperties;
   afterHooks: Map<string, NextFunction>;
   preHooks: Map<string, NextFunction>;
+  indexed: boolean = false;
+  indexes?: [string];
 
   constructor(properties: SchemaProperties) {
     this.preHooks = new Map<string, NextFunction>();
     this.afterHooks = new Map<string, NextFunction>();
     this.properties = properties;
+
+    for (const key in properties) {
+      const propDef = properties[key];
+      if ((<SchemaTypeOpts>propDef).index) {
+        if ((<SchemaTypeOpts>propDef).required === false) {
+          throw new Error("Indexed property cannot be unrequired");
+        } else {
+          (<SchemaTypeOpts>propDef).required = true;
+        }
+        this.indexes.push(key);
+      }
+    }
+
+    this.indexed = this.indexes.length > 0;
   }
   pre(name: string, callback: NextFunction) {
     this.preHooks.set(name, callback);
@@ -83,22 +99,9 @@ const value2Prop = (value: NeoType) => (
 
 // Create a model to create new nodes
 export const model = (label: string, schema: Schema) => {
-  const indexes = [];
-  for (const key in schema.properties) {
-    const propDef = schema.properties[key];
-    if ((<SchemaTypeOpts>propDef).index) {
-      if ((<SchemaTypeOpts>propDef).required === false) {
-        throw new Error("Indexed property cannot be unrequired");
-      } else {
-        (<SchemaTypeOpts>propDef).required = true;
-      }
-      indexes.push(key);
-    }
-  }
-
   // run indexing query
-  if (indexes.length !== 0) {
-    const queryParams = indexes.join(",");
+  if (schema.indexed) {
+    const queryParams = schema.indexes.join(",");
     session.run(`CREATE INDEX ON :${label}(${queryParams})`).subscribe({
       onCompleted(summary: ResultSummary) {
         console.log(`Succesfully created index for label ${label}`);
