@@ -15,11 +15,19 @@ import * as bluebird from "bluebird";
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
 
-import * as neo from "./utils/neo4jSession";
+import * as neo from "./lib/neo4js";
 import * as bcrypt from "bcrypt-nodejs";
 import * as crypto from "crypto";
 
 const MongoStore = mongo(session);
+
+const host = process.env.NEO4J_HOST || "localhost";
+const port = process.env.NEO4J_PORT || "7474";
+const dbPath = `cooper_${process.env.NODE_ENV}`;
+neo.connect({ host, port, dbPath }, {
+  user: process.env.NEO4J_USER,
+  password: process.env.NEO4J_PASSWORD,
+});
 
 const userSchema = new neo.Schema({
   email: {

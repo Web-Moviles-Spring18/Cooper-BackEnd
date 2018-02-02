@@ -1,109 +1,5 @@
-import { NextFunction } from "express";
-
-const nodeEnv = process.env.NODE_ENV || "development";
-const dbUri = `${process.env.NEO4J_URI}/cooper_${nodeEnv}`;
-const dbUser = process.env.NEO4J_USER;
-const dbPassword = process.env.NEO4J_PASSWORD;
-const neo4j = require("neo4j-driver").v1;
-
-export const session = neo4j.driver(dbUri, neo4j.auth.basic(dbUser, dbPassword)).session();
-
-type Neo4jError = Error & {
-  code: string,
-  name: string
-};
-
-type SchemaType = StringConstructor | NumberConstructor | BooleanConstructor | DateConstructor;
-
-type SchemaTypeOpts = {
-  type: SchemaType;
-  unique?: boolean;
-  required?: boolean;
-  index?: boolean;
-  lowercase?: boolean;
-  uppercase?: boolean;
-  enum?: [NeoType];
-  match?: string | RegExp;
-};
-
-type NeoType = string | boolean | number | Date;
-type PropDef = SchemaType | SchemaTypeOpts;
-
-const isSchemaTypeOpts = (propDef: PropDef): propDef is SchemaTypeOpts => (
-  (<SchemaTypeOpts>propDef).type !== undefined
-);
-
-// Schema properties can be one of:
-// String constructor
-// Number constructor
-// Boolean constructor
-// Date constructor
-// SchemaTypeOpts
-// TODO: add ArrayConstructor for all these
-interface SchemaProperties {
-  [key: string]: PropDef;
-}
-
-// properties to create a new node with a model.
-interface NodeProperties {
-  [key: string]: NeoType;
-}
-
-// The result of a query.
-type Record = {
-  keys: [string];
-  length: number;
-  _fields: [ any ];
-  _fieldLookup: { [key: string]: number };
-};
-
-// query metadata, passed to onCompleted
-type ResultSummary = {
-  statement: { text: string, paramenters: { [key: string]: NeoType } },
-  statementType: "r" | "w" | "rw"
-  counters: any // TODO: Write complete ResultSummary interface (useful for auto completition)
-};
-
-export class Schema {
-  properties: SchemaProperties;
-  afterHooks: Map<string, NextFunction>;
-  preHooks: Map<string, NextFunction>;
-  indexed: boolean = false;
-  indexes: Array<string> = [];
-  uniqueProps: Array<string> = [];
-  requiredProps: Array<string> = [];
-
-  constructor(properties: SchemaProperties) {
-    this.preHooks = new Map<string, NextFunction>();
-    this.afterHooks = new Map<string, NextFunction>();
-    this.properties = properties;
-
-    for (const key in properties) {
-      const propDef = <SchemaTypeOpts>properties[key];
-
-      if (propDef.unique) {
-        this.uniqueProps.push(key);
-      }
-
-      // Unique properties are inheritly single-property indexes.
-      if (propDef.index && !propDef.unique) {
-        this.indexes.push(key);
-      }
-
-      if (propDef.required) {
-        this.requiredProps.push(key);
-      }
-    }
-
-    this.indexed = this.indexes.length > 0;
-  }
-  pre(name: string, callback: NextFunction) {
-    this.preHooks.set(name, callback);
-  }
-  after(name: string, callback: NextFunction) {
-    this.afterHooks.set(name, callback);
-  }
-}
+import { session } from ".";
+import { Schema } from "./Schema";
 
 const defaultErrorHandler = console.error;
 
@@ -111,11 +7,15 @@ const value2Prop = (value: NeoType) => (
   typeof value === "number" ? value : `'${value}'`
 );
 
+const isSchemaTypeOpts = (propDef: PropDef): propDef is SchemaTypeOpts => (
+  (<SchemaTypeOpts>propDef).type !== undefined
+);
+
 // Create a model to create new nodes
 export const model = (label: string, schema: Schema) => {
   let canCreateConstraint = true;
   session.run("CALL db.constraints()").subscribe({
-    onNext(record: Record) {
+    onNext(record: NeoRecord) {
       canCreateConstraint = false;
     },
     onCompleted(summary: ResultSummary) {
@@ -152,7 +52,7 @@ export const model = (label: string, schema: Schema) => {
     }
 
     async save(fn: (err: Error) => void = defaultErrorHandler,
-              next: (res: Record) => void = () => {}): Promise<this> {
+              next: (res: NeoRecord) => void = () => {}): Promise<this> {
       const checkType = (key: string, value: NeoType, propDef: PropDef) => {
         if (value.constructor !== propDef) {
           throw new Error("Type mismatch: "
@@ -198,7 +98,7 @@ export const model = (label: string, schema: Schema) => {
             propsString += `${key}: ${value2Prop(this[key])}, `;
           }
           propsString = propsString.substr(0, propsString.length - 2) + " }";
-
+          console.log(propsString);
           const query = `CREATE (n:${label} ${propsString}) RETURN n`;
           session.run(query).subscribe({
             onNext: next,
