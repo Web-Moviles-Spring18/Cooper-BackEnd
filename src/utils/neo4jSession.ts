@@ -8,6 +8,11 @@ const neo4j = require("neo4j-driver").v1;
 
 export const session = neo4j.driver(dbUri, neo4j.auth.basic(dbUser, dbPassword)).session();
 
+type Neo4jError = Error & {
+  code: string,
+  name: string
+};
+
 type SchemaType = StringConstructor | NumberConstructor | BooleanConstructor | DateConstructor;
 
 type SchemaTypeOpts = {
@@ -48,14 +53,7 @@ interface NodeProperties {
 type Record = {
   keys: [string];
   length: number;
-  _fields: [ {
-    identity: {
-      low: number,
-      high: number
-    },
-    labels: [string],
-    properties?: NodeProperties
-    } ];
+  _fields: [ any ];
   _fieldLookup: { [key: string]: number };
 };
 
@@ -81,22 +79,18 @@ export class Schema {
     this.properties = properties;
 
     for (const key in properties) {
-      const propDef = properties[key];
-      if ((<SchemaTypeOpts>propDef).index) {
-        if ((<SchemaTypeOpts>propDef).required === false) {
-          throw new Error("Indexed property cannot be unrequired");
-        } else {
-          (<SchemaTypeOpts>propDef).required = true;
-        }
-        this.indexes.push(key);
-      }
+      const propDef = <SchemaTypeOpts>properties[key];
 
-      // Indexed properties are inheritly unique.
-      if ((<SchemaTypeOpts>propDef).unique && !(<SchemaTypeOpts>propDef).index) {
+      if (propDef.unique) {
         this.uniqueProps.push(key);
       }
 
-      if ((<SchemaTypeOpts>propDef).required) {
+      // Unique properties are inheritly single-property indexes.
+      if (propDef.index && !propDef.unique) {
+        this.indexes.push(key);
+      }
+
+      if (propDef.required) {
         this.requiredProps.push(key);
       }
     }
@@ -111,9 +105,7 @@ export class Schema {
   }
 }
 
-const defaultErrorHandler = (err: Error) => {
-  console.error(err);
-};
+const defaultErrorHandler = console.error;
 
 const value2Prop = (value: NeoType) => (
   typeof value === "number" ? value : `'${value}'`
@@ -121,25 +113,33 @@ const value2Prop = (value: NeoType) => (
 
 // Create a model to create new nodes
 export const model = (label: string, schema: Schema) => {
+  let canCreateConstraint = true;
+  session.run("CALL db.constraints()").subscribe({
+    onNext(record: Record) {
+      canCreateConstraint = false;
+    },
+    onCompleted(summary: ResultSummary) {
+      if (canCreateConstraint) {
+        schema.uniqueProps.forEach(prop => {
+          session.run(`CREATE CONSTRAINT ON (n:${label}) ASSERT n.${prop} IS UNIQUE`).subscribe({
+            onCompleted(summary: ResultSummary) {
+              console.log(`Succesfully created unique constraint for ${label}.${prop}`);
+            }
+          });
+        });
+      }
+    }
+  });
+
   // run indexing query
   if (schema.indexed) {
     const queryParams = schema.indexes.join(",");
     session.run(`CREATE INDEX ON :${label}(${queryParams})`).subscribe({
       onCompleted(summary: ResultSummary) {
         console.log(`Succesfully created index for label ${label}`);
-      },
-      onError: console.error
+      }
     });
   }
-
-  schema.uniqueProps.forEach(prop => {
-    session.run(`CREATE CONSTRAINT ON (n:${label}) ASSERT n.${prop} IS UNIQUE`).subscribe({
-      onCompleted(summary: ResultSummary) {
-        console.log(`Succesfully created unique constraint for ${label}.${prop}`);
-      },
-      onError: console.error
-    });
-  });
 
   return class Node {
     [key: string]: any;
@@ -151,7 +151,8 @@ export const model = (label: string, schema: Schema) => {
       }
     }
 
-    async save(fn: (err: Error) => void = defaultErrorHandler): Promise<this> {
+    async save(fn: (err: Error) => void = defaultErrorHandler,
+              next: (res: Record) => void = () => {}): Promise<this> {
       const checkType = (key: string, value: NeoType, propDef: PropDef) => {
         if (value.constructor !== propDef) {
           throw new Error("Type mismatch: "
@@ -200,11 +201,8 @@ export const model = (label: string, schema: Schema) => {
 
           const query = `CREATE (n:${label} ${propsString}) RETURN n`;
           session.run(query).subscribe({
-            onNext(record: Record) {
-              // IDEA: Chain queries?
-            },
+            onNext: next,
             onCompleted(summary: ResultSummary) {
-              console.log(summary);
               console.log("Succesfully created new node");
             },
             onError: fn

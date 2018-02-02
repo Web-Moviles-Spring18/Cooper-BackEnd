@@ -25,9 +25,9 @@ const userSchema = new neo.Schema({
   email: {
     type: String,
     lowercase: true,
-    unique: true,
     required: true,
     match: /\S+@\S+\.\S+/,
+    unique: true,
     index: true
    },
   password: String,
@@ -42,7 +42,8 @@ const userSchema = new neo.Schema({
     type: String,
     enum: ["Male", "Female"]
   },
-  age: Number
+  age: Number,
+  name: String
 });
 
 userSchema.pre("save", function hashPassword(next: Function) {
@@ -62,7 +63,7 @@ const firstUser = new User({
   name: "Hermes",
   email: "hermes.espinola@gmail.com",
   password: "qwerty",
-  age: new Date(),
+  age: 20,
   gender: "Male"
 });
 
