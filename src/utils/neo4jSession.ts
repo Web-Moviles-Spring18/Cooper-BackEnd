@@ -15,6 +15,10 @@ type SchemaTypeOpts = {
   unique?: boolean;
   required?: boolean;
   index?: boolean;
+  lowercase?: boolean;
+  uppercase?: boolean;
+  enum?: [NeoType];
+  match?: string | RegExp;
 };
 
 type NeoType = string | boolean | number | Date;
@@ -30,7 +34,7 @@ const isSchemaTypeOpts = (propDef: PropDef): propDef is SchemaTypeOpts => (
 // Boolean constructor
 // Date constructor
 // SchemaTypeOpts
-// TODO: add ArrayConstructor
+// TODO: add ArrayConstructor for all these
 interface SchemaProperties {
   [key: string]: PropDef;
 }
@@ -44,7 +48,14 @@ interface NodeProperties {
 type Record = {
   keys: [string];
   length: number;
-  _fields: [ { identity: {low: number, high: number}, labels: [string], properties?: NodeProperties } ];
+  _fields: [ {
+    identity: {
+      low: number,
+      high: number
+    },
+    labels: [string],
+    properties?: NodeProperties
+    } ];
   _fieldLookup: { [key: string]: number };
 };
 
@@ -60,7 +71,9 @@ export class Schema {
   afterHooks: Map<string, NextFunction>;
   preHooks: Map<string, NextFunction>;
   indexed: boolean = false;
-  indexes?: [string];
+  indexes: Array<string> = [];
+  uniqueProps: Array<string> = [];
+  requiredProps: Array<string> = [];
 
   constructor(properties: SchemaProperties) {
     this.preHooks = new Map<string, NextFunction>();
@@ -76,6 +89,15 @@ export class Schema {
           (<SchemaTypeOpts>propDef).required = true;
         }
         this.indexes.push(key);
+      }
+
+      // Indexed properties are inheritly unique.
+      if ((<SchemaTypeOpts>propDef).unique && !(<SchemaTypeOpts>propDef).index) {
+        this.uniqueProps.push(key);
+      }
+
+      if ((<SchemaTypeOpts>propDef).required) {
+        this.requiredProps.push(key);
       }
     }
 
@@ -110,41 +132,72 @@ export const model = (label: string, schema: Schema) => {
     });
   }
 
+  schema.uniqueProps.forEach(prop => {
+    session.run(`CREATE CONSTRAINT ON (n:${label}) ASSERT n.${prop} IS UNIQUE`).subscribe({
+      onCompleted(summary: ResultSummary) {
+        console.log(`Succesfully created unique constraint for ${label}.${prop}`);
+      },
+      onError: console.error
+    });
+  });
+
   return class Node {
     [key: string]: any;
     constructor(properties: NodeProperties = undefined) {
       if (properties) {
         for (const key in properties) {
-          const prop = properties[key];
-          const propDef = schema.properties[key];
-
-          if (isSchemaTypeOpts(propDef)) {
-            // Validate fields
-          }
-
           this[key] = properties[key];
         }
       }
     }
 
     async save(fn: (err: Error) => void = defaultErrorHandler): Promise<this> {
+      const checkType = (key: string, value: NeoType, propDef: PropDef) => {
+        if (value.constructor !== propDef) {
+          throw new Error("Type mismatch: "
+            + `expected ${key} to be a ${(<Function>propDef).name} `
+            + `but received a ${value.constructor.name}`);
+        }
+      };
+
       try {
-        // TODO: Validate fields
-        // If the schema property is SchemaTypeOpts, check these:
-        // lowercase, uppercase, unique, required, enum and maybe match
         const _save = (err?: Error) => {
           if (err) { return fn(err); }
 
-          // Save properties defined in the schema
-          const props: {[key: string]: any} = {};
-          for (const key in this) {
-            props[key] = this[key];
+          // Check for required properties
+          const missingProps = schema.requiredProps.filter(v => !this.hasOwnProperty(v));
+          if (missingProps.length > 0) {
+            throw new Error(`Missing required properties: ${missingProps}`);
           }
+
+          // Save properties defined in the schema
           let propsString = "{";
-          for (const key in this) {
+          for (const key in schema.properties) if (this[key]) {
+            // Validate fields
+            const propDef = schema.properties[key];
+            if (isSchemaTypeOpts(propDef)) {
+              const opts = (<SchemaTypeOpts>propDef);
+              checkType(key, this[key], opts.type);
+              if (opts.uppercase) {
+                this[key] = (<string>this[key]).toUpperCase();
+              }
+              if (opts.lowercase) {
+                this[key] = (<string>this[key]).toLowerCase();
+              }
+              if (opts.enum && opts.enum.indexOf(this[key]) === -1) {
+                throw new Error(`${this[key]} not in enum definition of ${key}`);
+              }
+              if (opts.match && !(<string>this[key]).match(opts.match)) {
+                throw new Error(`${key} must match ${opts.match}`);
+              }
+            } else {
+              checkType(key, this[key], propDef);
+            }
+
             propsString += `${key}: ${value2Prop(this[key])}, `;
           }
           propsString = propsString.substr(0, propsString.length - 2) + " }";
+
           const query = `CREATE (n:${label} ${propsString}) RETURN n`;
           session.run(query).subscribe({
             onNext(record: Record) {

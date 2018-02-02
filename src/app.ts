@@ -24,16 +24,25 @@ const MongoStore = mongo(session);
 const userSchema = new neo.Schema({
   email: {
     type: String,
+    lowercase: true,
+    unique: true,
+    required: true,
+    match: /\S+@\S+\.\S+/,
     index: true
-  },
+   },
   password: String,
-  age: Number,
   passwordResetToken: String,
   passwordResetExpires: Date,
-  name: String,
-  gender: String,
-  location: String,
-  picture: String
+
+  facebook: String,
+  twitter: String,
+  google: String,
+
+  gender: {
+    type: String,
+    enum: ["Male", "Female"]
+  },
+  age: Number
 });
 
 userSchema.pre("save", function hashPassword(next: Function) {
@@ -53,7 +62,8 @@ const firstUser = new User({
   name: "Hermes",
   email: "hermes.espinola@gmail.com",
   password: "qwerty",
-  age: 20
+  age: new Date(),
+  gender: "Male"
 });
 
 firstUser.save();
