@@ -3,7 +3,12 @@ type Neo4jError = Error & {
   name: string
 };
 
-type SchemaType = StringConstructor | NumberConstructor | BooleanConstructor | DateConstructor;
+interface ListConstructor {
+    new (): String[] | Number[] | Boolean[] | Date[];
+}
+
+type SchemaType = StringConstructor | NumberConstructor | BooleanConstructor |
+      DateConstructor | ListConstructor;
 
 type SchemaTypeOpts = {
   type: SchemaType;
@@ -16,7 +21,7 @@ type SchemaTypeOpts = {
   match?: string | RegExp;
 };
 
-type NeoType = string | boolean | number | Date;
+type NeoType = string | boolean | number | Date | String[] | Boolean[] | Number[] | Date[];
 type PropDef = SchemaType | SchemaTypeOpts;
 
 // Schema properties can be one of:

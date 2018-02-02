@@ -41,7 +41,8 @@ const userSchema = new neo.Schema({
   password: String,
   passwordResetToken: String,
   passwordResetExpires: Date,
-
+  accessTokens: Array,
+  tokenKinds: String,
   facebook: String,
   twitter: String,
   google: String,
@@ -69,8 +70,9 @@ userSchema.pre("save", function hashPassword(next: Function) {
 const User = neo.model("User", userSchema);
 const firstUser = new User({
   name: "Hermes",
-  email: "hermes.espinola@gmail.com",
+  email: "hermes.asdasdespinola@wizeline.com",
   password: "qwerty",
+  accessTokens: ["token1", "token2"],
   age: 20,
   gender: "Male"
 });

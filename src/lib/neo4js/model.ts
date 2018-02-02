@@ -3,10 +3,6 @@ import { Schema } from "./Schema";
 
 const defaultErrorHandler = console.error;
 
-const value2Prop = (value: NeoType) => (
-  typeof value === "number" ? value : `'${value}'`
-);
-
 const isSchemaTypeOpts = (propDef: PropDef): propDef is SchemaTypeOpts => (
   (<SchemaTypeOpts>propDef).type !== undefined
 );
@@ -56,8 +52,8 @@ export const model = (label: string, schema: Schema) => {
       const checkType = (key: string, value: NeoType, propDef: PropDef) => {
         if (value.constructor !== propDef) {
           throw new Error("Type mismatch: "
-            + `expected ${key} to be a ${(<Function>propDef).name} `
-            + `but received a ${value.constructor.name}`);
+            + `expected ${key} to be ${(<Function>propDef).name} `
+            + `but received ${value.constructor.name}`);
         }
       };
 
@@ -95,7 +91,7 @@ export const model = (label: string, schema: Schema) => {
               checkType(key, this[key], propDef);
             }
 
-            propsString += `${key}: ${value2Prop(this[key])}, `;
+            propsString += `${key}: ${JSON.stringify(this[key])}, `;
           }
           propsString = propsString.substr(0, propsString.length - 2) + " }";
           console.log(propsString);
