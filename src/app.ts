@@ -29,6 +29,11 @@ neo.connect({ host, port, dbPath }, {
   password: process.env.NEO4J_PASSWORD,
 });
 
+export type AuthToken = {
+  accessToken: string,
+  kind: string
+};
+
 const userSchema = new neo.Schema({
   email: {
     type: String,
@@ -37,22 +42,21 @@ const userSchema = new neo.Schema({
     match: /\S+@\S+\.\S+/,
     unique: true,
     index: true
-   },
+  },
   password: String,
   passwordResetToken: String,
   passwordResetExpires: Date,
-  accessTokens: Array,
-  tokenKinds: String,
+  tokens: Array,
   facebook: String,
   twitter: String,
   google: String,
-
+  name: String,
   gender: {
     type: String,
     enum: ["Male", "Female"]
   },
-  age: Number,
-  name: String
+  location: String,
+  picture: String
 });
 
 userSchema.pre("save", function hashPassword(next: Function) {
@@ -68,16 +72,21 @@ userSchema.pre("save", function hashPassword(next: Function) {
 });
 
 const User = neo.model("User", userSchema);
-const firstUser = new User({
-  name: "Hermes",
-  email: "hermes.asdasdespinola@wizeline.com",
-  password: "qwerty",
-  accessTokens: ["token1", "token2"],
-  age: 20,
-  gender: "Male"
-});
+// const firstUser = new User({
+//   name: "Hermes",
+//   email: "hermes.asdasdespinola@wizeline.com",
+//   password: "qwerty",
+//   accessTokens: ["token1", "token2"],
+//   age: 20,
+//   gender: "Male"
+// });
 
-firstUser.save();
+// firstUser.save();
+
+User.findAll((err, user) => {
+  console.log(user);
+  // user.save();
+}, 3);
 
 // Controllers (route handlers)
 import * as userController from "./controllers/user";

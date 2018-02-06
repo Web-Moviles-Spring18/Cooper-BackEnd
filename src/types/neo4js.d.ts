@@ -1,10 +1,26 @@
+import { NextFunction } from "express-serve-static-core";
+
 type Neo4jError = Error & {
   code: string,
   name: string
 };
 
+interface ISchema {
+  properties: SchemaProperties;
+  afterHooks: Map<string, NextFunction>;
+  preHooks: Map<string, NextFunction>;
+  indexed: boolean;
+  indexes: Array<string>;
+  uniqueProps: Array<string>;
+  requiredProps: Array<string>;
+
+  pre: (name: string, callback: NextFunction) => void;
+
+  after: (name: string, callback: NextFunction) => void;
+}
+
 interface ListConstructor {
-    new (): String[] | Number[] | Boolean[] | Date[];
+    new (): String[] | Number[] | Boolean[] | Date[] | Object[];
 }
 
 type SchemaType = StringConstructor | NumberConstructor | BooleanConstructor |
@@ -21,8 +37,17 @@ type SchemaTypeOpts = {
   match?: string | RegExp;
 };
 
-type NeoType = string | boolean | number | Date | String[] | Boolean[] | Number[] | Date[];
-type PropDef = SchemaType | SchemaTypeOpts;
+interface INode {
+  [key: string]: NeoType | Function | ISchema;
+  schema: ISchema;
+  save: (fn?: (err: Error) => void, next?: (res: NeoRecord) => void) => Promise<this>;
+}
+
+type FindCallback = (err: Neo4jError, node: INode) => void;
+type NeoType = string | boolean | number | Date | String[] |
+      Boolean[] | Number[] | Date[]; // | NodeProperties;
+type NestedProp = { [key: string]: PropDef };
+type PropDef = SchemaType | SchemaTypeOpts; // | NestedProp;
 
 // Schema properties can be one of:
 // String constructor
@@ -42,15 +67,15 @@ interface NodeProperties {
 
 // The result of a query.
 type NeoRecord = {
-  keys: [string];
+  keys: string[];
   length: number;
-  _fields: [ any ];
+  _fields: any;
   _fieldLookup: { [key: string]: number };
 };
 
 // query metadata, passed to onCompleted
 type ResultSummary = {
-  statement: { text: string, paramenters: { [key: string]: NeoType } },
+  statement: { text: string, paramenters: NodeProperties },
   statementType: "r" | "w" | "rw"
   counters: any // TODO: Write complete ResultSummary interface (useful for auto completition)
 };

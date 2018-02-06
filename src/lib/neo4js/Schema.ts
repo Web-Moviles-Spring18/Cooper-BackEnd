@@ -1,6 +1,8 @@
+import { session } from ".";
 import { NextFunction } from "express";
+import { SchemaProperties, ISchema, SchemaTypeOpts } from "neo4js";
 
-export class Schema {
+export class Schema implements ISchema {
   properties: SchemaProperties;
   afterHooks: Map<string, NextFunction>;
   preHooks: Map<string, NextFunction>;
@@ -33,9 +35,11 @@ export class Schema {
 
     this.indexed = this.indexes.length > 0;
   }
+
   pre(name: string, callback: NextFunction) {
     this.preHooks.set(name, callback);
   }
+
   after(name: string, callback: NextFunction) {
     this.afterHooks.set(name, callback);
   }
