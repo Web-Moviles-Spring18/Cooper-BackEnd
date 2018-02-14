@@ -7,17 +7,15 @@ import * as lusca from "lusca";
 import * as dotenv from "dotenv";
 import * as mongo from "connect-mongo";
 import * as path from "path";
-import * as mongoose from "mongoose";
 import * as passport from "passport";
 import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
+import * as bcrypt from "bcrypt-nodejs";
+import * as crypto from "crypto";
+import * as neo from "./lib/neo4js";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
-
-import * as neo from "./lib/neo4js";
-import * as bcrypt from "bcrypt-nodejs";
-import * as crypto from "crypto";
 
 const MongoStore = mongo(session);
 
@@ -34,44 +32,6 @@ export type AuthToken = {
   kind: string
 };
 
-const userSchema = new neo.Schema({
-  email: {
-    type: String,
-    lowercase: true,
-    required: true,
-    match: /\S+@\S+\.\S+/,
-    unique: true,
-    index: true
-  },
-  password: String,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
-  tokens: Array,
-  facebook: String,
-  twitter: String,
-  google: String,
-  name: String,
-  gender: {
-    type: String,
-    enum: ["Male", "Female"]
-  },
-  location: String,
-  picture: String
-});
-
-userSchema.pre("save", function hashPassword(next: Function) {
-  const user = this;
-  bcrypt.genSalt(10, (err, salt) => {
-    if (err) { return next(err); }
-    bcrypt.hash(user.password, salt, undefined, (err: mongoose.Error, hash) => {
-      if (err) { return next(err); }
-      user.password = hash;
-      next();
-    });
-  });
-});
-
-const User = neo.model("User", userSchema);
 // const firstUser = new User({
 //   name: "Hermes",
 //   email: "hermes.asdasdespinola@wizeline.com",
@@ -82,11 +42,6 @@ const User = neo.model("User", userSchema);
 // });
 
 // firstUser.save();
-
-User.findAll((err, user) => {
-  console.log(user);
-  // user.save();
-}, 3);
 
 // Controllers (route handlers)
 import * as userController from "./controllers/user";
@@ -101,13 +56,6 @@ const app = express();
 
 // Connect to MongoDB
 const mongoUrl = process.env.MONGOLAB_URI;
-(<any>mongoose).Promise = bluebird;
-mongoose.connect(mongoUrl, {useMongoClient: true}).then(
-  () => { console.log("MongoDB connection successful. "); },
-).catch(err => {
-  console.log("MongoDB connection error. Please make sure MongoDB is running. " + err);
-  process.exit();
-});
 
 // Express configuration
 app.set("port", process.env.PORT || 3000);

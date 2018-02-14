@@ -2,10 +2,11 @@ import * as async from "async";
 import * as crypto from "crypto";
 import * as nodemailer from "nodemailer";
 import * as passport from "passport";
-import { default as User, UserModel, AuthToken } from "../models/User";
+import { default as User, AuthToken } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { WriteError } from "mongodb";
+import { INode, Neo4jError } from "neo4js";
 const request = require("express-validator");
 
 /**
@@ -23,12 +24,12 @@ export let login = (req: Request, res: Response, next: NextFunction) => {
     return res.status(400).send(errors);
   }
 
-  passport.authenticate("local", (err: Error, user: UserModel, info: IVerifyOptions) => {
+  passport.authenticate("local", (err: Error, user: INode, info: IVerifyOptions) => {
     if (err) { return next(err); }
     if (!user) {
       return res.status(400).send(info.message);
     }
-    req.logIn(user, (err) => {
+    req.logIn(user, (err: Error) => {
       if (err) { return next(err); }
       res.status(200).send("Success! You are logged in.");
     });
@@ -66,17 +67,20 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   });
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
-    if (err) { return next(err); }
+    if (err) { next(err); }
     if (existingUser) {
-      return res.status(400).send("Account with that email addres already exists.");
+      return res.status(400).send("Account with that email address already exists.");
     }
-    user.save((err) => {
+    user.save((err: Error) => {
       if (err) { return next(err); }
-      req.logIn(user, (err) => {
+      req.logIn(user, (err: Error) => {
         if (err) {
           return next(err);
         }
-        res.status(201).send("Success! User registered.");
+        res.status(201).send({
+          message: "Success! User registered.",
+          value: user
+        });
       });
     });
   });
@@ -108,21 +112,21 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
     return res.status(400).send(errors);
   }
 
-  User.findById(req.user.id, (err, user: UserModel) => {
+  User.findOne({ email: req.user.email }, (err, user: INode) => {
     if (err) { return next(err); }
     user.email = req.body.email || user.email;
-    user.profile.name = req.body.name || "";
-    user.profile.gender = req.body.gender || "";
-    user.profile.location = req.body.location || "";
-    user.profile.website = req.body.website || "";
-    user.save((err: WriteError) => {
-      if (err) {
-        if (err.code === 11000) {
-          return res.status(400).send("The email address you have entered is already associated with an account.");
-        }
-        return next(err);
+    user.name = req.body.name || "";
+    user.gender = req.body.gender || "";
+    user.location = req.body.location || "";
+    user.website = req.body.website || "";
+    user.save((err: Neo4jError) => {
+      if (process.env.NODE_ENV == "development") {
+        console.error(err);
       }
-      res.status(200).send("Profile information has been updated.");
+      if (err) {
+        return res.status(400).send("The email address you have entered is already associated with an account.");
+      }
+      res.status(200).send({message: "Profile information has been updated.", });
     });
   });
 };
@@ -141,10 +145,10 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
     return res.status(400).send(errors);
   }
 
-  User.findById(req.user.id, (err, user: UserModel) => {
+  User.findOne({ email: req.user.email }, (err: Error, user: INode) => {
     if (err) { return next(err); }
     user.password = req.body.password;
-    user.save((err: WriteError) => {
+    user.save((err: Neo4jError) => {
       if (err) { return next(err); }
       res.status(200).send("Password has been changed.");
     });
@@ -156,7 +160,7 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
  * Delete user account.
  */
 export let postDeleteAccount = (req: Request, res: Response, next: NextFunction) => {
-  User.remove({ _id: req.user.id }, (err) => {
+  User.remove({ email: req.user.email }, (err: Neo4jError) => {
     if (err) { return next(err); }
     req.logout();
     res.status(200).send("Your account has been deleted.");
@@ -169,7 +173,7 @@ export let postDeleteAccount = (req: Request, res: Response, next: NextFunction)
  */
 export let getOauthUnlink = (req: Request, res: Response, next: NextFunction) => {
   const provider = req.params.provider;
-  User.findById(req.user.id, (err, user: any) => {
+  User.findOne({ email: req.user.email }, (err, user: any) => {
     if (err) { return next(err); }
     user[provider] = undefined;
     user.tokens = user.tokens.filter((token: AuthToken) => token.kind !== provider);
@@ -188,15 +192,13 @@ export let getReset = (req: Request, res: Response, next: NextFunction) => {
   if (req.isAuthenticated()) {
     return res.status(401).send("You are already logged in.");
   }
-  User.findOne({ passwordResetToken: req.params.token })
-    .where("passwordResetExpires").gt(Date.now())
-    .exec((err, user) => {
-      if (err) { return next(err); }
-      if (!user) {
-        return res.status(403).send("Password reset token is invalid or has expired.");
-      }
+  User.findOne({ passwordResetToken: req.params.token }, (err, user) => {
+        if (err) { return next(err); }
+        if (!user  || user.passwordResetToken < Date.now()) {
+          return res.status(403).send("Password reset token is invalid or has expired.");
+        }
 
-      res.status(200).send("Password reset token is valid");
+        res.status(200).send("Password reset token is valid.");
     });
 };
 
@@ -217,25 +219,23 @@ export let postReset = (req: Request, res: Response, next: NextFunction) => {
   async.waterfall([
     function resetPassword(done: Function) {
       User
-        .findOne({ passwordResetToken: req.params.token })
-        .where("passwordResetExpires").gt(Date.now())
-        .exec((err, user: any) => {
+        .findOne({ passwordResetToken: req.params.token }, (err, user: any) => {
           if (err) { return next(err); }
-          if (!user) {
+          if (!user || user.passwordResetToken < Date.now()) {
             return res.status(403).send("Password reset token is invalid or has expired.");
           }
           user.password = req.body.password;
           user.passwordResetToken = undefined;
           user.passwordResetExpires = undefined;
-          user.save((err: WriteError) => {
+          user.save((err: Neo4jError) => {
             if (err) { return next(err); }
-            req.logIn(user, (err) => {
+            req.logIn(user, (err: Error) => {
               done(err, user);
             });
           });
         });
     },
-    function sendResetPasswordEmail(user: UserModel, done: Function) {
+    function sendResetPasswordEmail(user: INode, done: Function) {
       const transporter = nodemailer.createTransport({
         service: "SendGrid",
         auth: {
@@ -244,17 +244,17 @@ export let postReset = (req: Request, res: Response, next: NextFunction) => {
         }
       });
       const mailOptions = {
-        to: user.email,
+        to: user.email.toString(),
         from: "service@cooper.com",
         subject: "Your password has been changed",
         text: `Hello,\n\nThis is a confirmation that the password for your account ${user.email} has just been changed.\n`
       };
-      transporter.sendMail(mailOptions, (err) => {
+      transporter.sendMail(mailOptions, (err: Error) => {
         res.status(200).send("Success! Your password has been changed.");
         done(err);
       });
     }
-  ], (err) => {
+  ], (err: Error) => {
     if (err) { return next(err); }
     res.status(500).send("Something went terribly wrong");
   });
@@ -294,8 +294,8 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
         });
       });
     },
-    function sendForgotPasswordEmail(token: AuthToken, user: UserModel, done: Function) {
-      console.log(token);
+    function sendForgotPasswordEmail(token: AuthToken, user: INode, done: Function) {
+      // console.log(token);
       const transporter = nodemailer.createTransport({
         service: "SendGrid",
         auth: {
@@ -304,7 +304,7 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
         }
       });
       const mailOptions = {
-        to: user.email,
+        to: user.email.toString(),
         from: "service@cooper.com",
         subject: "Reset your password on Cooper",
         text: `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\n
@@ -312,12 +312,12 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
           http://${req.headers.host}/reset/${token}\n\n
           If you did not request this, please ignore this email and your password will remain unchanged.\n`
       };
-      transporter.sendMail(mailOptions, (err) => {
+      transporter.sendMail(mailOptions, (err: Error) => {
         res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
         done(err);
       });
     }
-  ], (err) => {
+  ], (err: Error) => {
     if (err) { return next(err); }
     res.status(500).send("Something went terribly wrong");
   });
