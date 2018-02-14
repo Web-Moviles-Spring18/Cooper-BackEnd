@@ -1,7 +1,7 @@
 import { NextFunction } from "express-serve-static-core";
 
 type Neo4jError = Error & {
-  code: string,
+  code: number,
   name: string
 };
 
@@ -40,10 +40,10 @@ type SchemaTypeOpts = {
 interface INode {
   [key: string]: NeoType | Function | ISchema;
   schema: ISchema;
-  save: (fn?: (err: Error) => void, next?: (res: NeoRecord) => void) => Promise<this>;
+  save: (fn?: (err: Error) => void) => Promise<this>;
 }
 
-type FindCallback = (err: Neo4jError, node: INode) => void;
+type FindCallback = (err: Neo4jError, node: INode) => any;
 type NeoType = string | boolean | number | Date | String[] |
       Boolean[] | Number[] | Date[]; // | NodeProperties;
 type NestedProp = { [key: string]: PropDef };

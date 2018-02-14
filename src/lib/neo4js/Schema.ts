@@ -3,6 +3,7 @@ import { NextFunction } from "express";
 import { SchemaProperties, ISchema, SchemaTypeOpts } from "neo4js";
 
 export class Schema implements ISchema {
+  methods: {[key: string]: Function} = {};
   properties: SchemaProperties;
   afterHooks: Map<string, NextFunction>;
   preHooks: Map<string, NextFunction>;

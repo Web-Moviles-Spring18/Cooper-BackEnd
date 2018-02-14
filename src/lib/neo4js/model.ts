@@ -2,6 +2,7 @@ import { session } from ".";
 import { Schema } from "./Schema";
 import { isSchemaTypeOpts, toQueryProps, createProps } from "./util";
 import { NeoRecord, ResultSummary, SchemaTypeOpts, Neo4jError, NodeProperties, FindCallback, PropDef, NeoType, ISchema, INode } from "neo4js";
+import { NextFunction } from "express";
 
 const defaultErrorHandler = console.error;
 
@@ -12,6 +13,7 @@ export const model = (label: string, schema: Schema) => {
     onNext(record: NeoRecord) {
       canCreateConstraint = false;
     },
+
     onCompleted(summary: ResultSummary) {
       if (canCreateConstraint) {
         schema.uniqueProps.forEach(prop => {
@@ -45,16 +47,19 @@ export const model = (label: string, schema: Schema) => {
         }
       }
 
+      for (const functionName in schema.methods) {
+        this[functionName] = schema.methods[functionName].bind(this);
+      }
       // this.schema = schema;
     }
 
-    async save(fn: (err: Error) => void = defaultErrorHandler,
-              next: (res: NeoRecord) => void = () => {}): Promise<this> {
+    // TODO: update if saving an existing node
+    async save(fn: (err: Error) => void = defaultErrorHandler): Promise<this> {
       try {
         if (schema.preHooks.has("save")) {
-          schema.preHooks.get("save").call(this, _save);
+          schema.preHooks.get("save").call(this, () => { _save(this, label, schema, fn); });
         } else {
-          _save(label, schema, next, fn);
+          _save(this, label, schema, fn);
         }
         return this;
       } catch (e) {
@@ -79,7 +84,7 @@ export const model = (label: string, schema: Schema) => {
                   node.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
               }
             }
-            next(undefined, new NeoNode(node.properties));
+            next(undefined, <INode>new NeoNode(node.properties));
           });
         },
 
@@ -96,7 +101,14 @@ export const model = (label: string, schema: Schema) => {
       if (limit > 0) {
         query += ` LIMIT ${limit}`;
       }
+      let found = false;
       session.run(query).subscribe({
+        onCompleted(asdasd: any) {
+          if (!found) {
+            next(undefined, undefined);
+          }
+        },
+
         onNext(record: NeoRecord) {
           record._fields.forEach((node: any) => {
             for (const prop in node.properties) {
@@ -107,18 +119,51 @@ export const model = (label: string, schema: Schema) => {
                 node.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
               }
             }
-            next(undefined, new NeoNode(node.properties));
+            found = true;
+            next(undefined, <INode>new NeoNode(node.properties));
           });
         },
 
         onError(err: Neo4jError) {
+          console.error(err);
           next(err, undefined);
         }
       });
     }
 
     static async findOne(match: NodeProperties, next: FindCallback) {
-      this.find(match, next, 1);
+      if (schema.preHooks.has("findOne")) {
+        schema.preHooks.get("findOne").call(this, () => { this.find(match, next, 1); });
+      } else {
+        this.find(match, next, 1);
+      }
+      if (schema.afterHooks.has("findOne")) {
+        schema.afterHooks.get("findOne").call(this, (err: Error) => {
+          if (err) { console.error(err); }
+        });
+      }
+    }
+
+    static async remove(match: NodeProperties, next: Function) {
+      const matchString = toQueryProps(match);
+      if (matchString === "{}") {
+        throw new Error("This would delete the whole User label, if you really want to please use drop()");
+      }
+      const query = `MATCH (n:${label} ${matchString}) DETACH DELETE n`;
+
+      session.run(query).subscribe({
+        onCompleted() { next(); },
+        onError: next
+      });
+    }
+
+    static async drop(next: Function) {
+      const query = `MATCH (n:${label}) DETACH DELETE n`;
+
+      session.run(query).subscribe({
+        onCompleted() { next(); },
+        onError: next
+      });
     }
   };
 };
@@ -131,54 +176,58 @@ const checkType = (key: string, value: NeoType, propDef: PropDef) => {
   }
 };
 
-const _save = (label: String, schema: Schema,
-  next: (res: NeoRecord) => void = () => {},
+const _save = (self: any, label: String, schema: Schema,
   fn: (err: Error) => void, err?: Error) => {
   if (err) { return fn(err); }
 
   // Check for required properties
-  const missingProps = schema.requiredProps.filter(v => !this.hasOwnProperty(v));
+  const missingProps = schema.requiredProps.filter(v => !self.hasOwnProperty(v));
   if (missingProps.length > 0) {
     throw new Error(`Missing required properties: ${missingProps}`);
   }
 
   // Save properties defined in the schema
   let propsString = "{ ";
-  for (const key in schema.properties) if (this[key]) {
+  for (const key in schema.properties) if (self[key]) {
     // Validate fields
     const propDef = schema.properties[key];
     if (isSchemaTypeOpts(propDef)) {
       const opts = (<SchemaTypeOpts>propDef);
-      checkType(key, this[key], opts.type);
+      checkType(key, self[key], opts.type);
       if (opts.uppercase) {
-        this[key] = (<string>this[key]).toUpperCase();
+        self[key] = (<string>self[key]).toUpperCase();
       }
       if (opts.lowercase) {
-        this[key] = (<string>this[key]).toLowerCase();
+        self[key] = (<string>self[key]).toLowerCase();
       }
-      if (opts.enum && opts.enum.indexOf(this[key]) === -1) {
-        throw new Error(`${this[key]} not in enum definition of ${key}`);
+      if (opts.enum && opts.enum.indexOf(self[key]) === -1) {
+        throw new Error(`${self[key]} not in enum definition of ${key}`);
       }
-      if (opts.match && !(<string>this[key]).match(opts.match)) {
+      if (opts.match && !(<string>self[key]).match(opts.match)) {
         throw new Error(`${key} must match ${opts.match}`);
       }
     } else {
-      checkType(key, this[key], propDef);
+      checkType(key, self[key], propDef);
     }
 
-    propsString += `${key}: ${JSON.stringify(this[key])}, `;
+    propsString += `${key}: ${JSON.stringify(self[key])}, `;
   }
   propsString = propsString.substr(0, propsString.length - 2) + " }";
   const query = `CREATE (n:${label} ${propsString}) RETURN n`;
   session.run(query).subscribe({
-    onNext: next,
     onCompleted(summary: ResultSummary) {
       console.log("Succesfully created new node");
+      fn(undefined);
+    },
+    onNext(record: NeoRecord) {
+      if (process.env.NODE_ENV === "development") {
+        console.log(record);
+      }
     },
     onError: fn
   });
 
   if (schema.afterHooks.has("save")) {
-    schema.afterHooks.get("save").call(this);
+    schema.afterHooks.get("save").call(self);
   }
 };
