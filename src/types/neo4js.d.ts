@@ -40,6 +40,7 @@ type SchemaTypeOpts = {
 interface INode {
   [key: string]: NeoType | Function | ISchema;
   schema: ISchema;
+  _id?: number;
   save: (fn?: (err: Error) => void) => Promise<this>;
 }
 
@@ -55,7 +56,6 @@ type PropDef = SchemaType | SchemaTypeOpts; // | NestedProp;
 // Boolean constructor
 // Date constructor
 // SchemaTypeOpts
-// TODO: add ArrayConstructor for all these
 interface SchemaProperties {
   [key: string]: PropDef;
 }

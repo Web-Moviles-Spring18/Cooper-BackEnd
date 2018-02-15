@@ -24,6 +24,9 @@ export const model = (label: string, schema: Schema) => {
           });
         });
       }
+      // Add uniqueProps to indexes after creating the constraints
+      // since unique properties are inheritly single-property indexes.
+      schema.indexes = schema.indexes.concat(schema.uniqueProps);
     }
   });
 
@@ -40,11 +43,16 @@ export const model = (label: string, schema: Schema) => {
   return class NeoNode implements INode {
     [key: string]: NeoType | Function | ISchema;
     schema: ISchema;
-    constructor(properties: NodeProperties = undefined) {
+    _id?: number;
+    constructor(properties: NodeProperties = undefined, uid: number = undefined) {
       if (properties) {
         for (const key in properties) {
           this[key] = properties[key];
         }
+      }
+
+      if (uid) {
+        this._id = uid;
       }
 
       for (const functionName in schema.methods) {
@@ -84,7 +92,8 @@ export const model = (label: string, schema: Schema) => {
                   node.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
               }
             }
-            next(undefined, <INode>new NeoNode(node.properties));
+            const uid = record._fields[0].identity.low;
+            next(undefined, <INode>new NeoNode(node.properties, uid));
           });
         },
 
@@ -114,13 +123,13 @@ export const model = (label: string, schema: Schema) => {
             for (const prop in node.properties) {
               if (node.properties[prop].low) {
                 node.properties[prop] = node.properties[prop].low;
-              } else if (Array.isArray(node.properties[prop]) &&
-                node.properties[prop].low) {
+              } else if (Array.isArray(node.properties[prop]) && node.properties[prop].low) {
                 node.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
               }
             }
             found = true;
-            next(undefined, <INode>new NeoNode(node.properties));
+            const uid = record._fields[0].identity.low;
+            next(undefined, <INode>new NeoNode(node.properties, uid));
           });
         },
 
@@ -147,7 +156,8 @@ export const model = (label: string, schema: Schema) => {
     static async remove(match: NodeProperties, next: Function) {
       const matchString = toQueryProps(match);
       if (matchString === "{}") {
-        throw new Error("This would delete the whole User label, if you really want to please use drop()");
+        throw new Error("This would delete the whole User label, " +
+          "if you really want to, use drop()");
       }
       const query = `MATCH (n:${label} ${matchString}) DETACH DELETE n`;
 
@@ -172,18 +182,18 @@ const checkType = (key: string, value: NeoType, propDef: PropDef) => {
   if (value.constructor !== propDef) {
     throw new Error("Type mismatch: "
       + `expected ${key} to be ${(<Function>propDef).name} `
-      + `but received ${value.constructor.name}`);
+      + `but received ${value.constructor.name}.`);
   }
 };
 
-const _save = (self: any, label: String, schema: Schema,
+const _save = (self: INode, label: String, schema: Schema,
   fn: (err: Error) => void, err?: Error) => {
   if (err) { return fn(err); }
-
+  console.log(schema);
   // Check for required properties
   const missingProps = schema.requiredProps.filter(v => !self.hasOwnProperty(v));
   if (missingProps.length > 0) {
-    throw new Error(`Missing required properties: ${missingProps}`);
+    throw new Error(`Missing required properties: ${missingProps}.`);
   }
 
   // Save properties defined in the schema
@@ -191,35 +201,46 @@ const _save = (self: any, label: String, schema: Schema,
   for (const key in schema.properties) if (self[key]) {
     // Validate fields
     const propDef = schema.properties[key];
+    const value = (<NeoType>self[key]);
     if (isSchemaTypeOpts(propDef)) {
       const opts = (<SchemaTypeOpts>propDef);
-      checkType(key, self[key], opts.type);
+      checkType(key, value, opts.type);
       if (opts.uppercase) {
         self[key] = (<string>self[key]).toUpperCase();
       }
       if (opts.lowercase) {
         self[key] = (<string>self[key]).toLowerCase();
       }
-      if (opts.enum && opts.enum.indexOf(self[key]) === -1) {
-        throw new Error(`${self[key]} not in enum definition of ${key}`);
+      if (opts.enum && opts.enum.indexOf(value) === -1) {
+        throw new Error(`${self[key]} not in enum definition of ${key}.`);
       }
       if (opts.match && !(<string>self[key]).match(opts.match)) {
-        throw new Error(`${key} must match ${opts.match}`);
+        throw new Error(`${key} must match ${opts.match}.`);
       }
     } else {
-      checkType(key, self[key], propDef);
+      checkType(key, value, propDef);
     }
 
     propsString += `${key}: ${JSON.stringify(self[key])}, `;
   }
   propsString = propsString.substr(0, propsString.length - 2) + " }";
-  const query = `CREATE (n:${label} ${propsString}) RETURN n`;
+  let query: string, msg: string;
+
+  // If the id exists, then the node already exists in Neo4j
+  if (!self._id) {
+    query = `CREATE (n:${label} ${propsString}) RETURN n`;
+    msg = "Succesfully created new node.";
+  } else {
+    query = `MATCH (n:${label}) WHERE ID(n) = ${self._id} SET n = ${propsString} RETURN n`;
+    msg = "Succesfully created new node.";
+  }
   session.run(query).subscribe({
     onCompleted(summary: ResultSummary) {
-      console.log("Succesfully created new node");
+      console.log(msg);
       fn(undefined);
     },
     onNext(record: NeoRecord) {
+      self._id = record._fields[0].identity.low;
       if (process.env.NODE_ENV === "development") {
         console.log(record);
       }
