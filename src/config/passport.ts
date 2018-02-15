@@ -32,11 +32,9 @@ passport.use(new LocalStrategy({ usernameField: "email" }, (email: string, passw
     if (!user) {
       return done(undefined, false, { message: "Invalid email or password." });
     }
-    console.log("comparePassword");
     user.comparePassword(password, (err: Error, isMatch: boolean) => {
       if (err) { return done(err); }
       if (isMatch) {
-        console.log("alv funciona! :v");
         return done(undefined, user);
       }
       return done(undefined, false, { message: "Invalid email or password." });
