@@ -77,10 +77,7 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
         if (err) {
           return next(err);
         }
-        res.status(201).send({
-          message: "Success! User registered.",
-          value: user
-        });
+        res.status(201).send("Success! User registered.");
       });
     });
   });
@@ -92,6 +89,7 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
  */
 export let account = (req: Request, res: Response) => {
   delete req.user.password;
+  delete req.user._id;
   res.status(200).send(req.user);
 };
 
