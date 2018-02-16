@@ -40,6 +40,8 @@ export const model = (label: string, schema: Schema) => {
     });
   }
 
+  // A class that represents the defined model
+  // TODO: create our own _id property since it will be deprecated in Neo4j
   return class NeoNode implements INode {
     [key: string]: NeoType | Function | ISchema;
     schema: ISchema;
@@ -51,19 +53,20 @@ export const model = (label: string, schema: Schema) => {
         }
       }
 
+      // if an id already exists this node is already in the database.
       if (uid) {
         this._id = uid;
       }
 
+      // add functions to models
       for (const functionName in schema.methods) {
         this[functionName] = schema.methods[functionName].bind(this);
       }
-      // this.schema = schema;
     }
 
-    // TODO: update if saving an existing node
     async save(fn: (err: Error) => void = defaultErrorHandler): Promise<this> {
       try {
+        // execute pre and after hooks
         if (schema.preHooks.has("save")) {
           schema.preHooks.get("save").call(this, () => { _save(this, label, schema, fn); });
         } else {
@@ -106,7 +109,7 @@ export const model = (label: string, schema: Schema) => {
     static async find(match: NodeProperties, next: FindCallback, limit?: number) {
       const matchString = toQueryProps(match);
 
-      let query = `MATCH (n:${label} ${matchString === "{}" ? "" : matchString}) RETURN n`;
+      let query = `MATCH (n:${label} ${matchString === "p{}" ? "" : matchString}) RETURN n`;
       if (limit > 0) {
         query += ` LIMIT ${limit}`;
       }

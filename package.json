@@ -37,12 +37,14 @@
     "watch-debug": "concurrently -k -p \"[{name}]\" -n \"Sass,TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-sass\" \"npm run watch-ts\" \"npm run serve-debug\""
   },
   "dependencies": {
+    "@types/connect-redis": "0.0.7",
     "async": "^2.6.0",
     "bcrypt-nodejs": "^0.0.3",
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
     "compression": "^1.7.1",
     "connect-mongo": "^2.0.0",
+    "connect-redis": "^3.3.3",
     "dotenv": "^4.0.0",
     "errorhandler": "^1.5.0",
     "express": "^4.16.2",

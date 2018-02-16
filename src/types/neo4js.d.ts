@@ -75,7 +75,7 @@ type NeoRecord = {
 
 // query metadata, passed to onCompleted
 type ResultSummary = {
-  statement: { text: string, paramenters: NodeProperties },
-  statementType: "r" | "w" | "rw"
-  counters: any // TODO: Write complete ResultSummary interface (useful for auto completition)
+  statement: { text: string, paramenters: NodeProperties };
+  statementType: "r" | "w" | "rw";
+  counters: any;
 };
