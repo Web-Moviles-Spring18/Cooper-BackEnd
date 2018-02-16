@@ -36,6 +36,7 @@
     "copy-static-assets": "ts-node copyStaticAssets.ts",
     "debug": "npm run build && npm run watch-debug",
     "serve-debug": "nodemon --inspect dist/server.js",
+    "postman": "newman run https://www.getpostman.com/collections/13562d59e4570bd34466",
     "watch-debug": "concurrently -k -p \"[{name}]\" -n \"Sass,TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-sass\" \"npm run watch-ts\" \"npm run serve-debug\""
   },
   "dependencies": {
