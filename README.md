@@ -3,7 +3,7 @@
 ### Installation
 Run `npm install`.
 
-[Install mongo](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x/#install-mongodb-community-edition).
+Install neo4j and redis (The project has only been tested with docker versions of both).
 
 Copy `.env.example` to `.env` and change the settings as needed.
 
@@ -12,14 +12,14 @@ Run `npm run build` to transpile the code to javascript, run this before `start`
 
 Run `npm run debug` to start server in development mode with live reload.
 
-Run `npm test` to run the tests (duh).
+Run `npm test` to run the tests.
 
 ## Project Structure
 The `test` folder remain top level as expected.
 
 The full folder structure of this app is explained below:
 
-> **Note!** Make sure you have already built the app using `npm run build`
+> **Note!** Make sure you have already built the app using `npm run build` before `npm start`.
 
 | Name | Description |
 | ------------------------ | --------------------------------------------------------------------------------------------- |
@@ -49,7 +49,7 @@ If you're concerned about compile time, the main watch task takes ~2s to refresh
 
 ### Configuring TypeScript compilation
 TypeScript uses the file `tsconfig.json` to adjust project compile options.
-Let's dissect this project's `tsconfig.json`, starting with the `compilerOptions` which details how your project is compiled. 
+Let's dissect this project's `tsconfig.json`, starting with the `compilerOptions` which details how your project is compiled.
 
 ```json
     "compilerOptions": {
