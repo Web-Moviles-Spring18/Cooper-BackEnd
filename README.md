@@ -29,7 +29,7 @@ The full folder structure of this app is explained below:
 | **src**                  | Contains your source code that will be compiled to the dist dir                               |
 | **src/config**           | Passport authentication strategies and login middleware. Add other complex config code here   |
 | **src/controllers**      | Controllers define functions that respond to various http requests                            |
-| **src/models**           | Models define Mongoose schemas that will be used in storing and retrieving data from MongoDB  |
+| **src/models**           | Models define neo4js schemas that will be used in storing and retrieving data from Neo4j  |
 | **src/public**           | Static assets that will be used client side                                                   |
 | **src/types**            | Holds .d.ts files not found on DefinitelyTyped. Covered more in this [section](#type-definition-dts-files)          |
 | **src**/server.ts        | Entry point to your express app                                                               |

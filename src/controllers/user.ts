@@ -5,7 +5,6 @@ import * as passport from "passport";
 import { default as User, AuthToken } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
-import { WriteError } from "mongodb";
 import { INode, Neo4jError } from "neo4js";
 const request = require("express-validator");
 
@@ -175,7 +174,7 @@ export let getOauthUnlink = (req: Request, res: Response, next: NextFunction) =>
     if (err) { return next(err); }
     user[provider] = undefined;
     user.tokens = user.tokens.filter((token: AuthToken) => token.kind !== provider);
-    user.save((err: WriteError) => {
+    user.save((err: Error) => {
       if (err) { return next(err); }
       res.status(200).send(`${provider} account has been unlinked`);
     });
@@ -287,7 +286,7 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
         }
         user.passwordResetToken = token;
         user.passwordResetExpires = Date.now() + 3600000; // 1 hour
-        user.save((err: WriteError) => {
+        user.save((err: Error) => {
           done(err, token, user);
         });
       });
