@@ -314,7 +314,12 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
   ], (err: Error) => {
     if (err) {
       if (err.message === "User not found") {
+<<<<<<< HEAD
         return res.status(200).send(`An e-mail has been sent to ${req.body.email} with further instructions.`);
+=======
+        console.log(req.body.email);
+        return res.status(200).send(`An e-mail has been sent to ${req.body.email} with further instructions.`);;
+>>>>>>> 5a61ff5b20fd57b174677a495292e152c43c38d6
       }
       return next(err);
     }
