@@ -1,7 +1,7 @@
 import { session } from ".";
 import { Schema } from "./Schema";
 import { isSchemaTypeOpts, toQueryProps, createProps } from "./util";
-import { NeoRecord, ResultSummary, SchemaTypeOpts, Neo4jError, NodeProperties, FindCallback, PropDef, NeoType, ISchema, INode } from "neo4js";
+import { NeoRecord, ResultSummary, SchemaTypeOpts, Neo4jError, NeoProperties, FindCallback, PropDef, NeoType, ISchema, INode } from "neo4js";
 import { NextFunction } from "express";
 
 const defaultErrorHandler = console.error;
@@ -46,7 +46,10 @@ export const model = (label: string, schema: Schema) => {
     [key: string]: NeoType | Function | ISchema;
     schema: ISchema;
     _id?: number;
-    constructor(properties: NodeProperties = undefined, uid: number = undefined) {
+    label: string;
+
+    constructor(properties: NeoProperties = undefined, uid: number = undefined) {
+      this.label = label;
       if (properties) {
         for (const key in properties) {
           this[key] = properties[key];
@@ -61,6 +64,20 @@ export const model = (label: string, schema: Schema) => {
       // add functions to models
       for (const functionName in schema.methods) {
         this[functionName] = schema.methods[functionName].bind(this);
+      }
+
+      // Create relation function, build custom query and check for relation properties
+      for (const relationName in schema.relations) {
+        // Check for properties
+        const propDef = schema.relations[relationName].propDef;
+        this[relationName] = (other: NeoNode, props: NeoProperties) => {
+          console.log(other.schema);
+
+          const query = `MATCH (a:${label}), (b:${other.label})` +
+          `WHERE ID(a) = ${this._id} AND ID(b) = ${other._id}` +
+          `CREATE (a)-[r:${relationName} ${toQueryProps(props)}]->(b)` +
+          `RETURN r`;
+        };
       }
     }
 
@@ -78,6 +95,7 @@ export const model = (label: string, schema: Schema) => {
       }
     }
 
+    // TODO: Pagination
     static async findAll(next: FindCallback, limit?: number) {
       let query = `MATCH (n:${label}) RETURN n`;
       if (limit > 0) {
@@ -106,7 +124,7 @@ export const model = (label: string, schema: Schema) => {
       });
     }
 
-    static async find(match: NodeProperties, next: FindCallback, limit?: number) {
+    static async find(match: NeoProperties, next: FindCallback, limit?: number) {
       const matchString = toQueryProps(match);
 
       let query = `MATCH (n:${label} ${matchString === "p{}" ? "" : matchString}) RETURN n`;
@@ -143,7 +161,7 @@ export const model = (label: string, schema: Schema) => {
       });
     }
 
-    static async findOne(match: NodeProperties, next: FindCallback) {
+    static async findOne(match: NeoProperties, next: FindCallback) {
       if (schema.preHooks.has("findOne")) {
         schema.preHooks.get("findOne").call(this, () => { this.find(match, next, 1); });
       } else {
@@ -156,7 +174,7 @@ export const model = (label: string, schema: Schema) => {
       }
     }
 
-    static async remove(match: NodeProperties, next: Function) {
+    static async remove(match: NeoProperties, next: Function) {
       const matchString = toQueryProps(match);
       if (matchString === "{}") {
         throw new Error("This would delete the whole User label, " +

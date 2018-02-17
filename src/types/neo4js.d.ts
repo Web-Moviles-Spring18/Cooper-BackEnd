@@ -46,7 +46,7 @@ interface INode {
 
 type FindCallback = (err: Neo4jError, node: INode) => any;
 type NeoType = string | boolean | number | Date | String[] |
-      Boolean[] | Number[] | Date[]; // | NodeProperties;
+      Boolean[] | Number[] | Date[]; // | NeoProperties;
 type NestedProp = { [key: string]: PropDef };
 type PropDef = SchemaType | SchemaTypeOpts; // | NestedProp;
 
@@ -61,7 +61,7 @@ interface SchemaProperties {
 }
 
 // properties to create a new node with a model.
-interface NodeProperties {
+interface NeoProperties {
   [key: string]: NeoType;
 }
 
@@ -75,7 +75,7 @@ type NeoRecord = {
 
 // query metadata, passed to onCompleted
 type ResultSummary = {
-  statement: { text: string, paramenters: NodeProperties };
+  statement: { text: string, paramenters: NeoProperties };
   statementType: "r" | "w" | "rw";
   counters: any;
 };

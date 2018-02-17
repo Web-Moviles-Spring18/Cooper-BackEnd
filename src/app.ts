@@ -36,7 +36,6 @@ import * as auth from "./config/passport";
 // Create Express server
 const app = express();
 
-
 // Express configuration
 app.set("port", process.env.PORT || 3000);
 // app.set("views", path.join(__dirname, "../views"));
