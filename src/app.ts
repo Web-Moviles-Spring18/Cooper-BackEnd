@@ -49,6 +49,7 @@ app.use(expressValidator());
 
 const redisPort = process.env.REDIS_PORT;
 app.use(session({
+  resave: false,
   saveUninitialized: true,
   secret: process.env.SESSION_SECRET,
   store: new RedisStore({ host, port: redisPort })

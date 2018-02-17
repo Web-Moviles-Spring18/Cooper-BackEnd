@@ -217,9 +217,9 @@ export let postReset = (req: Request, res: Response, next: NextFunction) => {
     function resetPassword(done: Function) {
       User
         .findOne({ passwordResetToken: req.params.token }, (err, user: any) => {
-          if (err) { return next(err); }
+          if (err) { return done(next(err), user); }
           if (!user || user.passwordResetToken < Date.now()) {
-            return res.status(403).send("Password reset token is invalid or has expired.");
+            done(new Error("User not found"));
           }
           user.password = req.body.password;
           user.passwordResetToken = undefined;
@@ -281,9 +281,7 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
     function setRandomToken(token: AuthToken, done: Function) {
       User.findOne({ email: req.body.email }, (err, user: any) => {
         if (err) { return done(err); }
-        if (!user) {
-          return res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
-        }
+        if (!user) { done(new Error("User not found")); }
         user.passwordResetToken = token;
         user.passwordResetExpires = Date.now() + 3600000; // 1 hour
         user.save((err: Error) => {
@@ -292,7 +290,6 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
       });
     },
     function sendForgotPasswordEmail(token: AuthToken, user: INode, done: Function) {
-      // console.log(token);
       const transporter = nodemailer.createTransport({
         service: "SendGrid",
         auth: {
@@ -315,7 +312,13 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
       });
     }
   ], (err: Error) => {
-    if (err) { return next(err); }
+    if (err) {
+      if (err.message === "User not found") {
+        console.log(req.body.email);
+        return res.status(200).send(`An e-mail has been sent to ${req.body.email} with further instructions.`);;
+      }
+      return next(err);
+    }
     res.status(500).send("Something went terribly wrong");
   });
 };
