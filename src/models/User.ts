@@ -83,8 +83,6 @@ userSchema.methods.comparePassword = function (candidatePassword: string, cb: (e
   });
 };
 
-userSchema.relate("owns", Pool);
-
 /**
  * Helper method for getting user's gravatar.
  */
@@ -100,4 +98,18 @@ userSchema.methods.gravatar = (size: number) => {
 };
 
 const User = model("User", userSchema);
+
+userSchema.relate("friend", User);
+userSchema.relate("owns", Pool);
+userSchema.relate("participatesIn", Pool, {
+  debt: {
+    type: Number,
+    default: 0
+  },
+  paid: {
+    type: Number,
+    default: 0
+  }
+});
+
 export default User;

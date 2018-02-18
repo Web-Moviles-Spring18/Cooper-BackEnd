@@ -16,6 +16,11 @@ const poolSchema = new Schema({
     required: true
   },
   private: Boolean,
+  paymentMethod: {
+    type: String,
+    required: true,
+    enum: ["cash", "credit"]
+  },
   location: String,
   picture: String
 });
