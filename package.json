@@ -23,7 +23,7 @@
   "homepage": "https://github.com/Web-Moviles-Spring18/Lab-Web#readme",
   "scripts": {
     "start": "npm run serve",
-    "build": "npm run build-sass && npm run build-ts && npm run tslint && npm run copy-static-assets",
+    "build": "npm run build-sass && npm run build-ts && npm run tslint",
     "serve": "node dist/server.js",
     "watch-node": "nodemon dist/server.js",
     "watch": "concurrently -k -p \"[{name}]\" -n \"Sass,TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-sass\" \"npm run watch-ts\" \"npm run watch-node\"",
@@ -33,7 +33,6 @@
     "build-sass": "node-sass src/public/css/main.scss dist/public/css/main.css",
     "watch-sass": "node-sass -w src/public/css/main.scss dist/public/css/main.css",
     "tslint": "tslint -c tslint.json -p tsconfig.json",
-    "copy-static-assets": "ts-node copyStaticAssets.ts",
     "debug": "npm run build && npm run watch-debug",
     "serve-debug": "nodemon --inspect dist/server.js",
     "postman": "newman run https://www.getpostman.com/collections/13562d59e4570bd34466",
@@ -59,9 +58,7 @@
     "nodemailer": "^4.4.1",
     "passport": "^0.4.0",
     "passport-facebook": "^2.1.1",
-    "passport-local": "^1.0.0",
-    "pug": "^2.0.0-rc.4",
-    "request": "^2.83.0"
+    "passport-local": "^1.0.0"
   },
   "devDependencies": {
     "@types/async": "^2.0.45",
@@ -75,7 +72,6 @@
     "@types/express": "^4.0.35",
     "@types/express-session": "^1.15.6",
     "@types/jest": "^21.1.8",
-    "@types/jquery": "^3.2.17",
     "@types/lodash": "^4.14.102",
     "@types/lusca": "^1.5.0",
     "@types/morgan": "^1.7.32",
