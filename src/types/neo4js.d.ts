@@ -42,7 +42,7 @@ type SchemaTypeOpts = {
   index?: boolean;
   lowercase?: boolean;
   uppercase?: boolean;
-  enum?: [NeoType];
+  enum?: NeoType[];
   match?: string | RegExp;
 };
 
