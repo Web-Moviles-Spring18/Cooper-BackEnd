@@ -34,6 +34,7 @@ interface ListConstructor {
 
 type SchemaType = StringConstructor | NumberConstructor | BooleanConstructor |
       DateConstructor | ListConstructor;
+type RelationType = SchemaType;
 
 type SchemaTypeOpts = {
   type: SchemaType;
@@ -46,11 +47,18 @@ type SchemaTypeOpts = {
   match?: string | RegExp;
 };
 
+type RelationTypeOpts = {
+  type: RelationType;
+  required?: boolean;
+  default?: NeoType;
+};
+
 type FindCallback = (err: Neo4jError, node: INode) => any;
 type NeoType = string | boolean | number | Date | String[] |
       Boolean[] | Number[] | Date[]; // | NeoProperties;
 type NestedProp = { [key: string]: PropDef };
 type PropDef = SchemaType | SchemaTypeOpts; // | NestedProp;
+type RelationPropDef = RelationType | RelationTypeOpts;
 
 // Schema properties can be one of:
 // String constructor
@@ -60,6 +68,10 @@ type PropDef = SchemaType | SchemaTypeOpts; // | NestedProp;
 // SchemaTypeOpts
 interface SchemaProperties {
   [key: string]: PropDef;
+}
+
+interface RelationProperties {
+  [key: string]: RelationPropDef;
 }
 
 // properties to create a new node with a model.

@@ -69,7 +69,7 @@ export const model = (label: string, schema: Schema) => {
       // Create relation function, build custom query and check for relation properties
       for (const relationName in schema.relations) {
         // Check for properties
-        const propDef = schema.relations[relationName].propDef;
+        const properties = schema.relations[relationName].properties;
         const model = schema.relations[relationName].model;
         this[relationName] = async (other: NeoNode, props?: NeoProperties): Promise<void> => {
           if (!(other instanceof model)) {
