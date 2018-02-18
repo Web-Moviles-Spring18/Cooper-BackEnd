@@ -73,7 +73,7 @@ export const model = (label: string, schema: Schema) => {
         const model = schema.relations[relationName].model;
         this[relationName] = async (other: NeoNode, props?: NeoProperties): Promise<void> => {
           if (!(other instanceof model)) {
-            throw new Error(`Wrong node type: ${(<NeoNode>other).label}`);
+            throw new Error(`Wrong node type: ${(<NeoNode>other).label} in relation ${relationName}`);
           }
 
           // TODO: Check that properties meet propDef.
