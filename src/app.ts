@@ -87,6 +87,8 @@ app.post("/reset/:token", userController.postReset);
 app.post("/signup", userController.signup);
 app.get("/account", auth.isAuthenticated, userController.account);
 
+app.get("/user/:email", auth.isAuthenticated, userController.getUser);
+
 /**
  * Pool routes.
  */
