@@ -5,6 +5,15 @@ type Neo4jError = Error & {
   name: string
 };
 
+type Model = new (properties: NeoProperties, uid: number) => INode;
+
+interface INode {
+  [key: string]: NeoType | Function | ISchema;
+  schema: ISchema;
+  _id?: number;
+  save: (fn?: (err: Error) => void) => Promise<this>;
+}
+
 interface ISchema {
   properties: SchemaProperties;
   afterHooks: Map<string, NextFunction>;
@@ -36,13 +45,6 @@ type SchemaTypeOpts = {
   enum?: [NeoType];
   match?: string | RegExp;
 };
-
-interface INode {
-  [key: string]: NeoType | Function | ISchema;
-  schema: ISchema;
-  _id?: number;
-  save: (fn?: (err: Error) => void) => Promise<this>;
-}
 
 type FindCallback = (err: Neo4jError, node: INode) => any;
 type NeoType = string | boolean | number | Date | String[] |

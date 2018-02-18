@@ -70,15 +70,22 @@ export const model = (label: string, schema: Schema) => {
       for (const relationName in schema.relations) {
         // Check for properties
         const propDef = schema.relations[relationName].propDef;
-        this[relationName] = (other: NeoNode, props: NeoProperties) => {
+        const model = schema.relations[relationName].model;
+        this[relationName] = async (other: NeoNode, props?: NeoProperties) => {
           console.log(other.schema);
+          console.log("Is instanse of neoNode: " + (other instanceof NeoNode));
+          console.log("Is instanse of neoNode: " + (other instanceof model));
 
           const query = `MATCH (a:${label}), (b:${other.label})` +
           `WHERE ID(a) = ${this._id} AND ID(b) = ${other._id}` +
           `CREATE (a)-[r:${relationName} ${toQueryProps(props)}]->(b)` +
           `RETURN r`;
+
+          console.log(query);
         };
       }
+
+      this.schema = schema;
     }
 
     async save(fn: (err: Error) => void = defaultErrorHandler): Promise<this> {

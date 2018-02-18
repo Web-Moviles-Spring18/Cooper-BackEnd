@@ -1,6 +1,6 @@
 import { session } from ".";
 import { NextFunction } from "express";
-import { SchemaProperties, ISchema, SchemaTypeOpts, PropDef } from "neo4js";
+import { SchemaProperties, ISchema, SchemaTypeOpts, PropDef, INode, NeoProperties, Model } from "neo4js";
 
 export class Schema implements ISchema {
   methods: {[key: string]: Function} = {};
@@ -11,7 +11,7 @@ export class Schema implements ISchema {
   indexes: Array<string> = [];
   uniqueProps: Array<string> = [];
   requiredProps: Array<string> = [];
-  relations: {[key: string]: { schema: Schema, propDef: PropDef }} = {};
+  relations: {[key: string]: { model: Model, propDef: PropDef }} = {};
 
   constructor(properties: SchemaProperties) {
     this.preHooks = new Map<string, NextFunction>();
@@ -46,7 +46,7 @@ export class Schema implements ISchema {
     this.afterHooks.set(name, callback);
   }
 
-  relate(name: string, schema: Schema, propDef: PropDef) {
-    this.relations[name] = { schema, propDef };
+  relate(name: string, model: Model, propDef?: PropDef) {
+    this.relations[name] = { model, propDef };
   }
 }

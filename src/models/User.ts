@@ -3,7 +3,8 @@ import * as crypto from "crypto";
 
 import { NextFunction } from "express";
 import { Schema, model } from "../lib/neo4js";
-import { INode } from "neo4js";
+import { INode, Model, NeoProperties } from "neo4js";
+import { default as Pool } from "./Pool";
 
 export type AuthToken = {
   accessToken: string,
@@ -23,6 +24,7 @@ export type UserType = INode & {
   gender?: string,
   location?: string,
   picture?: string,
+  owns: (pool: Model, props?: NeoProperties) => void,
   comparePassword: (candidatePassword: string, cb: (err: any, isMatch: any) => any) => void,
   gravatar: (size: number) => string
 };
@@ -81,6 +83,8 @@ userSchema.methods.comparePassword = function (candidatePassword: string, cb: (e
     cb(err, isMatch);
   });
 };
+
+userSchema.relate("owns", Pool);
 
 /**
  * Helper method for getting user's gravatar.
