@@ -133,6 +133,41 @@ export const model = (label: string, schema: Schema) => {
       });
     }
 
+    static async findById(id: number, next: FindCallback) {
+      const query = `MATCH (n) where ID(n) = ${id} RETURN n`;
+      let found = false;
+      session.run(query).subscribe({
+        onCompleted() {
+          if (!found) {
+            next(undefined, undefined);
+          }
+        },
+
+        onNext(record: NeoRecord) {
+          // IDEA: Create an interface for a RawNode (the result in _fields)
+          record._fields.forEach((node: any) => {
+            for (const prop in node.properties) {
+              if (node.properties[prop].low) {
+                node.properties[prop] = node.properties[prop].low;
+              } else if (Array.isArray(node.properties[prop]) && node.properties[prop].low) {
+                node.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
+              }
+            }
+            found = true;
+            const uid = record._fields[0].identity.low;
+            next(undefined, <INode>new NeoNode(node.properties, uid));
+          });
+        },
+
+        onError(err: Neo4jError) {
+          if (process.env.NODE_ENV === "development") {
+            console.error(err);
+          }
+          next(err, undefined);
+        }
+      });
+    }
+
     static async find(match: NeoProperties, next: FindCallback, limit?: number) {
       const matchString = toQueryProps(match);
 
@@ -157,14 +192,16 @@ export const model = (label: string, schema: Schema) => {
                 node.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
               }
             }
-            found = true;
             const uid = record._fields[0].identity.low;
+            found = true;
             next(undefined, <INode>new NeoNode(node.properties, uid));
           });
         },
 
         onError(err: Neo4jError) {
-          console.error(err);
+          if (process.env.NODE_ENV === "development") {
+            console.error(err);
+          }
           next(err, undefined);
         }
       });
