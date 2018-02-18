@@ -6,7 +6,6 @@ import { default as User, AuthToken } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { INode, Neo4jError } from "neo4js";
-const request = require("express-validator");
 
 /**
  * POST /login

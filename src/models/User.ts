@@ -24,7 +24,7 @@ export type UserType = INode & {
   gender?: string,
   location?: string,
   picture?: string,
-  owns: (pool: Model, props?: NeoProperties) => void,
+  owns: (pool: INode, props?: NeoProperties) => Promise<void>,
   comparePassword: (candidatePassword: string, cb: (err: any, isMatch: any) => any) => void,
   gravatar: (size: number) => string
 };
@@ -78,7 +78,6 @@ userSchema.pre("findOne", function parseTokens(next: Function) {
 });
 
 userSchema.methods.comparePassword = function (candidatePassword: string, cb: (err: any, isMatch: any) => any) {
-  console.log(this);
   bcrypt.compare(candidatePassword, this.password, (err, isMatch) => {
     cb(err, isMatch);
   });

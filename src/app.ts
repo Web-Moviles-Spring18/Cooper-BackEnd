@@ -29,6 +29,7 @@ neo.connect({ host, port: neo4jPort, dbPath }, {
 import * as userController from "./controllers/user";
 import * as apiController from "./controllers/api";
 import * as contactController from "./controllers/contact";
+import * as poolController from "./controllers/pool";
 
 // API keys and Passport configuration
 import * as auth from "./config/passport";
@@ -85,6 +86,11 @@ app.get("/reset/:token", userController.getReset);
 app.post("/reset/:token", userController.postReset);
 app.post("/signup", userController.signup);
 app.get("/account", auth.isAuthenticated, userController.account);
+
+/**
+ * Pool routes.
+ */
+app.post("/pool", auth.isAuthenticated, poolController.postPool);
 
 // app.get("/contact", contactController.getContact);
 // app.post("/contact", contactController.postContact);

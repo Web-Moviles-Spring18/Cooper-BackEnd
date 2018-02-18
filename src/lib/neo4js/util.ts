@@ -10,6 +10,9 @@ export const toQueryProps = (object: NeoProperties) => {
   for (const prop in object) {
     propsString += ` ${prop}: ${JSON.stringify(object[prop])}, `;
   }
+  if (propsString.length === 2) {
+    return "{}";
+  }
   return propsString.substr(0, propsString.length - 2) + " }";
 };
 

@@ -71,21 +71,23 @@ export const model = (label: string, schema: Schema) => {
         // Check for properties
         const propDef = schema.relations[relationName].propDef;
         const model = schema.relations[relationName].model;
-        this[relationName] = async (other: NeoNode, props?: NeoProperties) => {
-          console.log(other.schema);
-          console.log("Is instanse of neoNode: " + (other instanceof NeoNode));
-          console.log("Is instanse of neoNode: " + (other instanceof model));
+        this[relationName] = async (other: NeoNode, props?: NeoProperties): Promise<void> => {
+          if (!(other instanceof model)) {
+            throw new Error(`Wrong node type: ${(<NeoNode>other).label}`);
+          }
 
-          const query = `MATCH (a:${label}), (b:${other.label})` +
-          `WHERE ID(a) = ${this._id} AND ID(b) = ${other._id}` +
-          `CREATE (a)-[r:${relationName} ${toQueryProps(props)}]->(b)` +
+          // TODO: Check that properties meet propDef.
+          const query = `MATCH (a:${label}), (b:${other.label}) ` +
+          `WHERE ID(a) = ${this._id} AND ID(b) = ${other._id} ` +
+          `CREATE (a)-[r:${relationName} ${toQueryProps(props)}]->(b) ` +
           `RETURN r`;
-
-          console.log(query);
+          session.run(query).subscribe({
+            onCompleted() { },
+            onNext() { },
+            onError(err: Neo4jError) { throw err; }
+          });
         };
       }
-
-      this.schema = schema;
     }
 
     async save(fn: (err: Error) => void = defaultErrorHandler): Promise<this> {
@@ -140,7 +142,7 @@ export const model = (label: string, schema: Schema) => {
       }
       let found = false;
       session.run(query).subscribe({
-        onCompleted(asdasd: any) {
+        onCompleted() {
           if (!found) {
             next(undefined, undefined);
           }
@@ -191,6 +193,7 @@ export const model = (label: string, schema: Schema) => {
 
       session.run(query).subscribe({
         onCompleted() { next(); },
+        onNext() { },
         onError: next
       });
     }
@@ -200,6 +203,7 @@ export const model = (label: string, schema: Schema) => {
 
       session.run(query).subscribe({
         onCompleted() { next(); },
+        onNext() { },
         onError: next
       });
     }
@@ -217,7 +221,7 @@ const checkType = (key: string, value: NeoType, propDef: PropDef) => {
 const _save = (self: INode, label: String, schema: Schema,
   fn: (err: Error) => void, err?: Error) => {
   if (err) { return fn(err); }
-  console.log(schema);
+
   // Check for required properties
   const missingProps = schema.requiredProps.filter(v => !self.hasOwnProperty(v));
   if (missingProps.length > 0) {
@@ -260,11 +264,11 @@ const _save = (self: INode, label: String, schema: Schema,
     msg = "Succesfully created new node.";
   } else {
     query = `MATCH (n:${label}) WHERE ID(n) = ${self._id} SET n = ${propsString} RETURN n`;
-    msg = "Succesfully created new node.";
+    msg = "Succesfully updated new node.";
   }
   session.run(query).subscribe({
     onCompleted(summary: ResultSummary) {
-      console.log(msg);
+      console.info(msg);
       fn(undefined);
     },
     onNext(record: NeoRecord) {
