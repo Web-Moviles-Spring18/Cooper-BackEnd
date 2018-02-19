@@ -16,7 +16,7 @@ export type UserType = INode & {
   password: string,
   passwordResetToken?: string,
   passwordResetExpires?: Date,
-  tokens?: AuthToken,
+  tokens?: AuthToken[],
   facebook?: string,
   twitter?: string,
   google?: string,
@@ -24,9 +24,9 @@ export type UserType = INode & {
   gender?: string,
   location?: string,
   picture?: string,
-  owns: (pool: PoolType, props?: NeoProperties) => Promise<void>,
-  friendOf: (friend: UserType, props?: NeoProperties) => Promise<void>,
-  participatesIn: (pool: PoolType, props?: NeoProperties) => Promise<void>,
+  owns: (pool: INode, props?: NeoProperties) => Promise<void>,
+  friendOf: (friend: INode, props?: NeoProperties) => Promise<void>,
+  participatesIn: (pool: INode, props?: NeoProperties) => Promise<void>,
   comparePassword: (candidatePassword: string, cb: (err: any, isMatch: any) => any) => void,
   gravatar: (size: number) => string
 };
