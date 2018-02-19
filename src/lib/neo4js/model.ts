@@ -1,6 +1,6 @@
 import { session } from ".";
 import { Schema } from "./Schema";
-import { isSchemaTypeOpts, toQueryProps, createProps } from "./util";
+import { isSchemaTypeOpts, toQueryProps, createProps, checkType } from "./util";
 import { NeoRecord, ResultSummary, SchemaTypeOpts, Neo4jError, NeoProperties, FindCallback, PropDef, NeoType, ISchema, INode } from "neo4js";
 import { NextFunction } from "express";
 
@@ -245,14 +245,6 @@ export const model = (label: string, schema: Schema) => {
       });
     }
   };
-};
-
-const checkType = (key: string, value: NeoType, propDef: PropDef) => {
-  if (value.constructor !== propDef) {
-    throw new Error("Type mismatch: "
-      + `expected ${key} to be ${(<Function>propDef).name} `
-      + `but received ${value.constructor.name}.`);
-  }
 };
 
 const _save = (self: INode, label: String, schema: Schema,

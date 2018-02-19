@@ -1,8 +1,16 @@
-import { SchemaTypeOpts, PropDef, NeoProperties, NeoRecord } from "neo4js";
+import { SchemaTypeOpts, PropDef, NeoProperties, NeoRecord, NeoType } from "neo4js";
 
 export const isSchemaTypeOpts = (propDef: PropDef): propDef is SchemaTypeOpts => (
   (<SchemaTypeOpts>propDef).type !== undefined
 );
+
+export const checkType = (key: string, value: NeoType, propDef: PropDef) => {
+  if (value.constructor !== propDef) {
+    throw new Error("Type mismatch: "
+      + `expected ${key} to be ${(<Function>propDef).name} `
+      + `but received ${value.constructor.name}.`);
+  }
+};
 
 // Stringify a json to neo4j properties.
 export const toQueryProps = (object: NeoProperties) => {

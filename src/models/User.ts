@@ -4,7 +4,7 @@ import * as crypto from "crypto";
 import { NextFunction } from "express";
 import { Schema, model } from "../lib/neo4js";
 import { INode, Model, NeoProperties } from "neo4js";
-import { default as Pool } from "./Pool";
+import { default as Pool, PoolType } from "./Pool";
 
 export type AuthToken = {
   accessToken: string,
@@ -24,7 +24,9 @@ export type UserType = INode & {
   gender?: string,
   location?: string,
   picture?: string,
-  owns: (pool: INode, props?: NeoProperties) => Promise<void>,
+  owns: (pool: PoolType, props?: NeoProperties) => Promise<void>,
+  friendOf: (friend: UserType, props?: NeoProperties) => Promise<void>,
+  participatesIn: (pool: PoolType, props?: NeoProperties) => Promise<void>,
   comparePassword: (candidatePassword: string, cb: (err: any, isMatch: any) => any) => void,
   gravatar: (size: number) => string
 };
@@ -99,7 +101,7 @@ userSchema.methods.gravatar = (size: number) => {
 
 const User = model("User", userSchema);
 
-userSchema.relate("friend", User);
+userSchema.relate("friendOf", User);
 userSchema.relate("owns", Pool);
 userSchema.relate("participatesIn", Pool, {
   debt: {
