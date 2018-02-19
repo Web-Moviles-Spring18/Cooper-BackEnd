@@ -44,7 +44,6 @@ export const model = (label: string, schema: Schema) => {
   // TODO: create our own _id property since it will be deprecated in Neo4j
   return class NeoNode implements INode {
     [key: string]: NeoType | Function | ISchema;
-    schema: ISchema;
     _id?: number;
     label: string;
 
@@ -105,7 +104,7 @@ export const model = (label: string, schema: Schema) => {
     }
 
     // TODO: Pagination
-    static async findAll(next: FindCallback, limit?: number) {
+    static async findAll(next: FindCallback, limit?: number): Promise<void> {
       let query = `MATCH (n:${label}) RETURN n`;
       if (limit > 0) {
         query += ` LIMIT ${limit}`;

@@ -9,7 +9,6 @@ type Model = new (properties: NeoProperties, uid: number) => INode;
 
 interface INode {
   [key: string]: NeoType | Function | ISchema;
-  schema: ISchema;
   _id?: number;
   save: (fn?: (err: Error) => void) => Promise<this>;
 }
