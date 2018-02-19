@@ -204,13 +204,13 @@ export let getReset = (req: Request, res: Response, next: NextFunction) => {
     return res.status(401).send("You are already logged in.");
   }
   User.findOne({ passwordResetToken: req.params.token }, (err, user) => {
-        if (err) { return next(err); }
-        if (!user  || user.passwordResetToken < Date.now()) {
-          return res.status(403).send("Password reset token is invalid or has expired.");
-        }
+      if (err) { return next(err); }
+      if (!user  || user.passwordResetToken < Date.now()) {
+        return res.status(403).send("Password reset token is invalid or has expired.");
+      }
 
-        res.status(200).send("Password reset token is valid.");
-    });
+      res.status(200).send("Password reset token is valid.");
+  });
 };
 
 /**
