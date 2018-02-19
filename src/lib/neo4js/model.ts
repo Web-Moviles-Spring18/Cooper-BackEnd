@@ -76,6 +76,7 @@ export const model = (label: string, schema: Schema) => {
           }
 
           // TODO: Check that properties meet propDef.
+          // TODO: Put default properies defined in propDef.
           const query = `MATCH (a:${label}), (b:${other.label}) ` +
           `WHERE ID(a) = ${this._id} AND ID(b) = ${other._id} ` +
           `CREATE (a)-[r:${relationName} ${toQueryProps(props)}]->(b) ` +

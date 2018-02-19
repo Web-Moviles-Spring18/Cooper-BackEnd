@@ -96,6 +96,7 @@ app.get("/user/:email", auth.isAuthenticated, userController.getUser);
  * Pool routes.
  */
 app.post("/pool", auth.isAuthenticated, poolController.postPool);
+app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 
 // app.get("/contact", contactController.getContact);
 // app.post("/contact", contactController.postContact);

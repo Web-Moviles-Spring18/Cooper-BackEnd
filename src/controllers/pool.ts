@@ -9,14 +9,14 @@ const request = require("express-validator");
  * Create a new pool.
  */
 export let postPool = (req: Request, res: Response, next: NextFunction) => {
-  req.assert("name", "Pool name must be a alpha string between 3 and 31 characters").isAlpha().isLength({ min: 3, max: 31 });
+  req.assert("name", "Pool name must be a alpha string between 3 and 31 characters").isAscii().isLength({ min: 3, max: 31 });
   req.assert("private", "Private must be a boolean").isBoolean();
-  req.assert("total", "Total must be a number").isNumeric();
-  req.assert("currency", "Currency must be a length 3 alpha string").isAlpha().isLength({ max: 3, min: 3 });
-  req.assert("paymentMethod", "Payment method must be a alpha string").isAlpha();
+  req.assert("total", "Total must be a number").optional().isNumeric();
+  req.assert("paymentMethod", "Payment method must be credit or cash").isIn(["credit", "cash"]);
   req.assert("location", "Location must be a LatLnog").optional().isLatLong();
-  req.assert("ends", "Ends must be a date").toDate();
+  req.assert("ends", "Ends must be a date").optional().toDate();
   req.assert("starts", "Ends must be a date").optional().toDate();
+  req.assert("currency", "Currency must be one of usd or mxn").isIn(["usd", "mxn"]);
 
   const errors = req.validationErrors();
 
@@ -27,9 +27,10 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
   const pool = new Pool({
     name: req.body.name,
     private: req.body.private,
-    total: req.body.total,
+    total: req.body.total || 0,
     currency: req.body.currency,
     paymentMethod: req.body.paymentMethod,
+    ends: req.body.ends || new Date()
   });
 
   if (req.body.location) {
@@ -59,3 +60,24 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
     });
   });
 };
+
+/**
+ * POST /join/:invite
+ * Join an existing pool.
+ */
+ export let getJoinPool = (req: Request, res: Response, next: NextFunction) => {
+   Pool.findOne({ invite: req.params.invite }, (err, pool) => {
+     if (err) { return next(err); }
+     if (!pool) {
+       return res.status(404).send("Pool not found.");
+     }
+
+     // TODO: Create a method to see if a node is already related to other.
+     req.user.participatesIn(pool, { debt: 0, paid: 0 }).then(() => {
+       res.status(200).send("Succesfully joined pool!");
+     }).catch((err: Error) => {
+       console.error(err);
+       res.status(500).send("Something went wrong.");
+     });
+   });
+ };
