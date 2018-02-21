@@ -5,12 +5,16 @@ type Neo4jError = Error & {
   name: string
 };
 
-type Model = new (properties: NeoProperties, uid: number) => INode;
+type Model = new (properties: NeoProperties, uid?: number) => INode;
+type Relationship = { relation: NeoProperties, node: INode };
 
 interface INode {
   [key: string]: NeoType | Function | ISchema;
   _id?: number;
   save: (fn?: (err: Error) => void) => Promise<this>;
+  getRelated: (relName: String, otherModel: Model, next: (err: Neo4jError, node: Relationship[]) => void) => Promise<void>;
+  hasRelation: (name: String, match: NeoProperties, next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
+  hasRelationWith: (name: String, other: INode, next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
 }
 
 interface ISchema {

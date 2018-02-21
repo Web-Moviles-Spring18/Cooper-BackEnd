@@ -10,7 +10,10 @@ export type PoolType = INode & {
   invite: String,
   paymentMethod: "cash" | "credit",
   currency: "usd" | "mxn",
-  location?: string,
+  location?: {
+    lat: number,
+    long: number
+  },
   starts?: Date,
   ends: Date,
   picture?: string
@@ -52,7 +55,13 @@ const poolSchema = new Schema({
 });
 
 poolSchema.pre("save", function createInvite(next: Function) {
-  const pool: PoolType = this;
+  const pool = this;
+
+  // Convert location to string.
+  if (pool.location) {
+    pool.location = JSON.stringify(pool.location);
+  }
+
   if (pool._id) { return; } // If the pool already exists don't overwrite the invite link
 
   // Create a random invite link for this pool

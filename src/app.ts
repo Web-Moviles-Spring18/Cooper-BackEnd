@@ -97,6 +97,8 @@ app.get("/user/:email", auth.isAuthenticated, userController.getUser);
  */
 app.post("/pool", auth.isAuthenticated, poolController.postPool);
 app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
+app.get("/pool/:id", auth.isAuthenticated, poolController.getPool);
+app.get("/profile/pools", auth.isAuthenticated, poolController.getMyPools);
 
 // app.get("/contact", contactController.getContact);
 // app.post("/contact", contactController.postContact);

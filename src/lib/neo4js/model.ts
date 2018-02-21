@@ -1,7 +1,7 @@
 import { session } from ".";
 import { Schema } from "./Schema";
 import { isSchemaTypeOpts, toQueryProps, createProps, checkType } from "./util";
-import { NeoRecord, ResultSummary, SchemaTypeOpts, Neo4jError, NeoProperties, FindCallback, PropDef, NeoType, ISchema, INode } from "neo4js";
+import { NeoRecord, ResultSummary, SchemaTypeOpts, Neo4jError, NeoProperties, FindCallback, PropDef, NeoType, ISchema, INode, Model, Relationship } from "neo4js";
 import { NextFunction } from "express";
 
 const defaultErrorHandler = console.error;
@@ -47,7 +47,7 @@ export const model = (label: string, schema: Schema) => {
     _id?: number;
     label: string;
 
-    constructor(properties: NeoProperties = undefined, uid: number = undefined) {
+    constructor(properties: NeoProperties = undefined, uid?: number) {
       this.label = label;
       if (properties) {
         for (const key in properties) {
@@ -111,6 +111,8 @@ export const model = (label: string, schema: Schema) => {
         query += ` LIMIT ${limit}`;
       }
       session.run(query).subscribe({
+        onCompleted() { },
+
         onNext(record: NeoRecord) {
           record._fields.forEach((node: any) => {
             for (const prop in node.properties) {
@@ -157,6 +159,89 @@ export const model = (label: string, schema: Schema) => {
             const uid = record._fields[0].identity.low;
             next(undefined, <INode>new NeoNode(node.properties, uid));
           });
+        },
+
+        onError(err: Neo4jError) {
+          if (process.env.NODE_ENV === "development") {
+            console.error(err);
+          }
+          next(err, undefined);
+        }
+      });
+    }
+
+    async getRelated(relName: String, otherModel: Model, next: (err: Neo4jError, res: Relationship[]) => void) {
+      const query = `MATCH (u:${label})-[r:${relName}]-(v) RETURN r, v`;
+      const pairs: Relationship[] = [];
+      session.run(query).subscribe({
+        onCompleted(sum: ResultSummary) {
+          next(undefined, pairs);
+        },
+
+        onNext(response: NeoRecord) {
+          const relation = response._fields[0];
+          const node = response._fields[1];
+          for (const prop in node.properties) {
+            if (node.properties[prop].low) {
+              node.properties[prop] = node.properties[prop].low;
+            } else if (Array.isArray(node.properties[prop]) && node.properties[prop].low) {
+              node.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
+            }
+          }
+          for (const prop in relation) {
+            if (relation[prop].low) {
+              relation[prop] = relation[prop].low;
+            } else if (Array.isArray(relation[prop]) && relation[prop].low) {
+              relation[prop].map((intObj: {low: number, high: number}) => intObj.low);
+            }
+          }
+          for (const prop in relation.properties) {
+            if (relation.properties[prop].low) {
+              relation.properties[prop] = relation.properties[prop].low;
+            } else if (Array.isArray(relation.properties[prop]) && relation.properties[prop].low) {
+              relation.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
+            }
+          }
+          pairs.push({ relation, node: new otherModel(node.properties) });
+        },
+
+        onError(err: Neo4jError) {
+          next(err, undefined);
+        }
+      });
+    }
+
+    async hasRelation(relName: String, otherMatch: NeoProperties, next: (err: Neo4jError, res: boolean) => void) {
+      const query = `MATCH (u:${label}), (v ${toQueryProps(otherMatch)}) `+
+      `WHERE ID(u) = ${this._id} ` +
+      `RETURN EXISTS((u)-[:${relName}]-(v))`;
+
+      session.run(query).subscribe({
+        onCompleted(summary: ResultSummary) { },
+
+        onNext(record: NeoRecord) {
+          next(undefined, record._fields[0]);
+        },
+
+        onError(err: Neo4jError) {
+          if (process.env.NODE_ENV === "development") {
+            console.error(err);
+          }
+          next(err, undefined);
+        }
+      });
+    }
+
+    async hasRelationWith(name: String, other: NeoNode, next: (err: Neo4jError, res: boolean) => void) {
+      const query = `MATCH (u:${label}), (v:${other.label}) `+
+      `WHERE ID(u) = ${this._id} AND ID(v) = ${other._id} ` +
+      `RETURN EXISTS((u)-[:${name}]-(v))`;
+
+      session.run(query).subscribe({
+        onCompleted(summary: ResultSummary) { },
+
+        onNext(record: NeoRecord) {
+          next(undefined, record._fields[0]);
         },
 
         onError(err: Neo4jError) {
