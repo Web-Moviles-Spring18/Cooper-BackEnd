@@ -29,6 +29,7 @@ neo.connect({ host, port: neo4jPort, dbPath }, {
 import * as userController from "./controllers/user";
 import * as apiController from "./controllers/api";
 import * as contactController from "./controllers/contact";
+import * as poolController from "./controllers/pool";
 
 // API keys and Passport configuration
 import * as auth from "./config/passport";
@@ -36,11 +37,8 @@ import * as auth from "./config/passport";
 // Create Express server
 const app = express();
 
-
 // Express configuration
 app.set("port", process.env.PORT || 3000);
-// app.set("views", path.join(__dirname, "../views"));
-// app.set("view engine", "pug");
 app.use(compression());
 app.use(logger("dev"));
 app.use(bodyParser.json());
@@ -88,6 +86,20 @@ app.get("/reset/:token", userController.getReset);
 app.post("/reset/:token", userController.postReset);
 app.post("/signup", userController.signup);
 app.get("/account", auth.isAuthenticated, userController.account);
+
+/**
+ * User routes.
+ */
+app.get("/user/:email", auth.isAuthenticated, userController.getUser);
+
+/**
+ * Pool routes.
+ */
+app.post("/pool", auth.isAuthenticated, poolController.postPool);
+app.post("/pool/:id/invite", auth.isAuthenticated, poolController.postInvite);
+app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
+app.get("/pool/:id", auth.isAuthenticated, poolController.getPool);
+app.get("/profile/pools", auth.isAuthenticated, poolController.getMyPools);
 
 // app.get("/contact", contactController.getContact);
 // app.post("/contact", contactController.postContact);

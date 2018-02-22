@@ -3,7 +3,13 @@
 ### Installation
 Run `npm install`.
 
-Install neo4j and redis (The project has only been tested with docker versions of both).
+Install [neo4j](https://neo4j.com/docs/operations-manual/current/installation/), enter the web interface and set a new password.
+It has been tested only with the docker version of neo4j downloaded from the [Kitematic](https://kitematic.com/) app.
+
+> **Important:** Make sure that the variables in the `.env` file are properly set,
+because the docker version of neo4j doesn't use the default ports.
+
+Same for (redis)[https://redis.io/topics/quickstart]. Or just download the docker image from Kitematic.
 
 Copy `.env.example` to `.env` and change the settings as needed.
 

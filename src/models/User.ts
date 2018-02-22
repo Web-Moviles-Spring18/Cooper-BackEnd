@@ -3,7 +3,8 @@ import * as crypto from "crypto";
 
 import { NextFunction } from "express";
 import { Schema, model } from "../lib/neo4js";
-import { INode } from "neo4js";
+import { INode, Model, NeoProperties } from "neo4js";
+import { default as Pool, PoolType } from "./Pool";
 
 export type AuthToken = {
   accessToken: string,
@@ -15,7 +16,7 @@ export type UserType = INode & {
   password: string,
   passwordResetToken?: string,
   passwordResetExpires?: Date,
-  tokens?: AuthToken,
+  tokens?: AuthToken[],
   facebook?: string,
   twitter?: string,
   google?: string,
@@ -23,6 +24,9 @@ export type UserType = INode & {
   gender?: string,
   location?: string,
   picture?: string,
+  owns: (pool: INode, props?: NeoProperties) => Promise<void>,
+  friendOf: (friend: INode, props?: NeoProperties) => Promise<void>,
+  participatesIn: (pool: INode, props?: NeoProperties) => Promise<void>,
   comparePassword: (candidatePassword: string, cb: (err: any, isMatch: any) => any) => void,
   gravatar: (size: number) => string
 };
@@ -76,12 +80,10 @@ userSchema.pre("findOne", function parseTokens(next: Function) {
 });
 
 userSchema.methods.comparePassword = function (candidatePassword: string, cb: (err: any, isMatch: any) => any) {
-  console.log(this);
   bcrypt.compare(candidatePassword, this.password, (err, isMatch) => {
     cb(err, isMatch);
   });
 };
-
 
 /**
  * Helper method for getting user's gravatar.
@@ -98,4 +100,18 @@ userSchema.methods.gravatar = (size: number) => {
 };
 
 const User = model("User", userSchema);
+
+userSchema.relate("friendOf", User);
+userSchema.relate("owns", Pool);
+userSchema.relate("participatesIn", Pool, {
+  debt: {
+    type: Number,
+    default: 0
+  },
+  paid: {
+    type: Number,
+    default: 0
+  }
+});
+
 export default User;
