@@ -60,7 +60,39 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
- * GET /pool/:_id
+ * POST /pool/:id/invite
+ * Send an invite link to another user, only if the user owns the pool
+ */
+export let postInvite = (req: Request, res: Response, next: NextFunction) => {
+  Pool.findById(req.params.id, (err, pool: PoolType) => {
+    if (err) { return next(err); }
+    if (!pool) {
+      return res.status(404).send("Pool not found.");
+    }
+    req.user.hasRelationWith("owns", pool, (err: Error, userOwnsPool: boolean) => {
+      if (err) { return next(err); }
+      if (!userOwnsPool) {
+        return res.status(401).send("You don't own this pool");
+      }
+
+      req.assert("email", "Invalid email").isEmail();
+      req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
+      User.findOne({ email: req.body.email }, (err, user: UserType) => {
+        if (err) { return next(err); }
+        if (!user) {
+          return res.status(200).send("Invitation sent!.");
+        }
+
+        console.log("Should send email");
+        res.status(200).send("Invitation sent!.");
+        // Send email, how?
+      });
+    });
+  });
+};
+
+/**
+ * GET /pool/:id
  * See pool detail.
  */
 export let getPool = (req: Request, res: Response, next: NextFunction) => {
@@ -87,7 +119,7 @@ export let getMyPools = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
- * POST /join/:invite
+ * GET /join/:invite
  * Join an existing pool.
  */
  export let getJoinPool = (req: Request, res: Response, next: NextFunction) => {

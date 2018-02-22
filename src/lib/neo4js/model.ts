@@ -1,6 +1,6 @@
 import { session } from ".";
 import { Schema } from "./Schema";
-import { isSchemaTypeOpts, toQueryProps, createProps, checkType } from "./util";
+import { isSchemaTypeOpts, toQueryProps, createProps, checkType, flatNumericProps } from "./util";
 import { NeoRecord, ResultSummary, SchemaTypeOpts, Neo4jError, NeoProperties, FindCallback, PropDef, NeoType, ISchema, INode, Model, Relationship } from "neo4js";
 import { NextFunction } from "express";
 
@@ -76,7 +76,7 @@ export const model = (label: string, schema: Schema) => {
           }
 
           // TODO: Check that properties meet propDef.
-          // TODO: Put default properies defined in propDef.
+          // TODO: Put default properties defined in propDef.
           const query = `MATCH (a:${label}), (b:${other.label}) ` +
           `WHERE ID(a) = ${this._id} AND ID(b) = ${other._id} ` +
           `CREATE (a)-[r:${relationName} ${toQueryProps(props)}]->(b) ` +
@@ -148,13 +148,7 @@ export const model = (label: string, schema: Schema) => {
         onNext(record: NeoRecord) {
           // IDEA: Create an interface for a RawNode (the result in _fields)
           record._fields.forEach((node: any) => {
-            for (const prop in node.properties) {
-              if (node.properties[prop].low) {
-                node.properties[prop] = node.properties[prop].low;
-              } else if (Array.isArray(node.properties[prop]) && node.properties[prop].low) {
-                node.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
-              }
-            }
+            flatNumericProps(node.properties);
             found = true;
             const uid = record._fields[0].identity.low;
             next(undefined, <INode>new NeoNode(node.properties, uid));
@@ -181,27 +175,9 @@ export const model = (label: string, schema: Schema) => {
         onNext(response: NeoRecord) {
           const relation = response._fields[0];
           const node = response._fields[1];
-          for (const prop in node.properties) {
-            if (node.properties[prop].low) {
-              node.properties[prop] = node.properties[prop].low;
-            } else if (Array.isArray(node.properties[prop]) && node.properties[prop].low) {
-              node.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
-            }
-          }
-          for (const prop in relation) {
-            if (relation[prop].low) {
-              relation[prop] = relation[prop].low;
-            } else if (Array.isArray(relation[prop]) && relation[prop].low) {
-              relation[prop].map((intObj: {low: number, high: number}) => intObj.low);
-            }
-          }
-          for (const prop in relation.properties) {
-            if (relation.properties[prop].low) {
-              relation.properties[prop] = relation.properties[prop].low;
-            } else if (Array.isArray(relation.properties[prop]) && relation.properties[prop].low) {
-              relation.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
-            }
-          }
+          flatNumericProps(node.properties);
+          flatNumericProps(relation);
+          flatNumericProps(relation.properties);
           pairs.push({ relation, node: new otherModel(node.properties) });
         },
 
@@ -212,7 +188,7 @@ export const model = (label: string, schema: Schema) => {
     }
 
     async hasRelation(relName: String, otherMatch: NeoProperties, next: (err: Neo4jError, res: boolean) => void) {
-      const query = `MATCH (u:${label}), (v ${toQueryProps(otherMatch)}) `+
+      const query = `MATCH (u:${label}), (v ${toQueryProps(otherMatch)}) ` +
       `WHERE ID(u) = ${this._id} ` +
       `RETURN EXISTS((u)-[:${relName}]-(v))`;
 
@@ -233,7 +209,7 @@ export const model = (label: string, schema: Schema) => {
     }
 
     async hasRelationWith(name: String, other: NeoNode, next: (err: Neo4jError, res: boolean) => void) {
-      const query = `MATCH (u:${label}), (v:${other.label}) `+
+      const query = `MATCH (u:${label}), (v:${other.label}) ` +
       `WHERE ID(u) = ${this._id} AND ID(v) = ${other._id} ` +
       `RETURN EXISTS((u)-[:${name}]-(v))`;
 
@@ -242,7 +218,7 @@ export const model = (label: string, schema: Schema) => {
 
         onNext(record: NeoRecord) {
           next(undefined, record._fields[0]);
-        },
+      },
 
         onError(err: Neo4jError) {
           if (process.env.NODE_ENV === "development") {
@@ -270,13 +246,7 @@ export const model = (label: string, schema: Schema) => {
 
         onNext(record: NeoRecord) {
           record._fields.forEach((node: any) => {
-            for (const prop in node.properties) {
-              if (node.properties[prop].low) {
-                node.properties[prop] = node.properties[prop].low;
-              } else if (Array.isArray(node.properties[prop]) && node.properties[prop].low) {
-                node.properties[prop].map((intObj: {low: number, high: number}) => intObj.low);
-              }
-            }
+            flatNumericProps(node.properties);
             const uid = record._fields[0].identity.low;
             found = true;
             next(undefined, <INode>new NeoNode(node.properties, uid));

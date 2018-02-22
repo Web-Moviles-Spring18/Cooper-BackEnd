@@ -34,6 +34,17 @@ export const createProps = (record: NeoRecord): NeoProperties => {
   return props;
 };
 
+// Neo4j numeric values return in the form { low: number, high: number } for some reason
+export const flatNumericProps = (props: { [key: string]: any }) => {
+  for (const prop in props) {
+    if (props[prop].low) {
+      props[prop] = props[prop].low;
+    } else if (Array.isArray(props[prop]) && props[prop].low) {
+      props[prop].map((intObj: {low: number, high: number}) => intObj.low);
+    }
+  }
+};
+
 // export const isNestedProp = (propDef: PropDef): propDef is NestedProp => (
 //   !isSchemaTypeOpts(propDef) && typeof propDef === "object"
 // );
