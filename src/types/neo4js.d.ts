@@ -5,6 +5,18 @@ type Neo4jError = Error & {
   name: string
 };
 
+type Model = new (properties: NeoProperties, uid?: number) => INode;
+type Relationship = { relation: NeoProperties, node: INode };
+
+interface INode {
+  [key: string]: NeoType | Function | ISchema;
+  _id?: number;
+  save: (fn?: (err: Error) => void) => Promise<this>;
+  getRelated: (relName: String, otherModel: Model, next: (err: Neo4jError, node: Relationship[]) => void) => Promise<void>;
+  hasRelation: (name: String, match: NeoProperties, next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
+  hasRelationWith: (name: String, other: INode, next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
+}
+
 interface ISchema {
   properties: SchemaProperties;
   afterHooks: Map<string, NextFunction>;
@@ -25,6 +37,7 @@ interface ListConstructor {
 
 type SchemaType = StringConstructor | NumberConstructor | BooleanConstructor |
       DateConstructor | ListConstructor;
+type RelationType = SchemaType;
 
 type SchemaTypeOpts = {
   type: SchemaType;
@@ -33,22 +46,22 @@ type SchemaTypeOpts = {
   index?: boolean;
   lowercase?: boolean;
   uppercase?: boolean;
-  enum?: [NeoType];
+  enum?: NeoType[];
   match?: string | RegExp;
 };
 
-interface INode {
-  [key: string]: NeoType | Function | ISchema;
-  schema: ISchema;
-  _id?: number;
-  save: (fn?: (err: Error) => void) => Promise<this>;
-}
+type RelationTypeOpts = {
+  type: RelationType;
+  required?: boolean;
+  default?: NeoType;
+};
 
 type FindCallback = (err: Neo4jError, node: INode) => any;
 type NeoType = string | boolean | number | Date | String[] |
-      Boolean[] | Number[] | Date[]; // | NodeProperties;
+      Boolean[] | Number[] | Date[]; // | NeoProperties;
 type NestedProp = { [key: string]: PropDef };
 type PropDef = SchemaType | SchemaTypeOpts; // | NestedProp;
+type RelationPropDef = RelationType | RelationTypeOpts;
 
 // Schema properties can be one of:
 // String constructor
@@ -60,8 +73,12 @@ interface SchemaProperties {
   [key: string]: PropDef;
 }
 
+interface RelationProperties {
+  [key: string]: RelationPropDef;
+}
+
 // properties to create a new node with a model.
-interface NodeProperties {
+interface NeoProperties {
   [key: string]: NeoType;
 }
 
@@ -75,7 +92,7 @@ type NeoRecord = {
 
 // query metadata, passed to onCompleted
 type ResultSummary = {
-  statement: { text: string, paramenters: NodeProperties };
+  statement: { text: string, paramenters: NeoProperties };
   statementType: "r" | "w" | "rw";
   counters: any;
 };

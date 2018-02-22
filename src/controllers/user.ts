@@ -2,11 +2,10 @@ import * as async from "async";
 import * as crypto from "crypto";
 import * as nodemailer from "nodemailer";
 import * as passport from "passport";
-import { default as User, AuthToken } from "../models/User";
+import { default as User, AuthToken, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { INode, Neo4jError } from "neo4js";
-const request = require("express-validator");
 
 /**
  * POST /login
@@ -23,7 +22,7 @@ export let login = (req: Request, res: Response, next: NextFunction) => {
     return res.status(400).send(errors);
   }
 
-  passport.authenticate("local", (err: Error, user: INode, info: IVerifyOptions) => {
+  passport.authenticate("local", (err: Error, user: UserType, info: IVerifyOptions) => {
     if (err) { return next(err); }
     if (!user) {
       return res.status(400).send(info.message);
@@ -82,6 +81,21 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
+export let getUser = (req: Request, res: Response) => {
+  User.findOne({ email: req.params.email }, (err, user: UserType) => {
+    if (err) {
+      return res.status(500).send("Something went wrong. Please try again later.");
+    } else if (!user) {
+      return res.status(404).send(`User with email ${req.params.email} not found.`);
+    } else {
+      delete user.password;
+      delete user._id;
+      delete user.label;
+      res.status(200).send(user);
+    }
+  });
+};
+
 /**
  * GET /account
  * Profile page.
@@ -109,7 +123,7 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
     return res.status(400).send(errors);
   }
 
-  User.findOne({ email: req.user.email }, (err, user: INode) => {
+  User.findOne({ email: req.user.email }, (err, user: UserType) => {
     if (err) { return next(err); }
     user.email = req.body.email || user.email;
     user.name = req.body.name || "";
@@ -142,7 +156,7 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
     return res.status(400).send(errors);
   }
 
-  User.findOne({ email: req.user.email }, (err: Error, user: INode) => {
+  User.findOne({ email: req.user.email }, (err: Error, user: UserType) => {
     if (err) { return next(err); }
     user.password = req.body.password;
     user.save((err: Neo4jError) => {
@@ -190,13 +204,13 @@ export let getReset = (req: Request, res: Response, next: NextFunction) => {
     return res.status(401).send("You are already logged in.");
   }
   User.findOne({ passwordResetToken: req.params.token }, (err, user) => {
-        if (err) { return next(err); }
-        if (!user  || user.passwordResetToken < Date.now()) {
-          return res.status(403).send("Password reset token is invalid or has expired.");
-        }
+      if (err) { return next(err); }
+      if (!user  || user.passwordResetToken < Date.now()) {
+        return res.status(403).send("Password reset token is invalid or has expired.");
+      }
 
-        res.status(200).send("Password reset token is valid.");
-    });
+      res.status(200).send("Password reset token is valid.");
+  });
 };
 
 /**
@@ -232,7 +246,7 @@ export let postReset = (req: Request, res: Response, next: NextFunction) => {
           });
         });
     },
-    function sendResetPasswordEmail(user: INode, done: Function) {
+    function sendResetPasswordEmail(user: UserType, done: Function) {
       const transporter = nodemailer.createTransport({
         service: "SendGrid",
         auth: {
@@ -289,7 +303,7 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
         });
       });
     },
-    function sendForgotPasswordEmail(token: AuthToken, user: INode, done: Function) {
+    function sendForgotPasswordEmail(token: AuthToken, user: UserType, done: Function) {
       const transporter = nodemailer.createTransport({
         service: "SendGrid",
         auth: {
