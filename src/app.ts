@@ -5,57 +5,52 @@ import * as bodyParser from "body-parser";
 import * as logger from "morgan";
 import * as lusca from "lusca";
 import * as dotenv from "dotenv";
-import * as mongo from "connect-mongo";
 import * as path from "path";
-import * as mongoose from "mongoose";
 import * as passport from "passport";
+import * as redis from "connect-redis";
 import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
-
-const MongoStore = mongo(session);
+import * as bcrypt from "bcrypt-nodejs";
+import * as crypto from "crypto";
+import * as neo from "./lib/neo4js";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
+const RedisStore = redis(session);
+const host = process.env.HOST || "localhost";
+const neo4jPort = process.env.NEO4J_PORT || "7474";
+const dbPath = `cooper_${process.env.NODE_ENV}`;
+neo.connect({ host, port: neo4jPort, dbPath }, {
+  user: process.env.NEO4J_USER,
+  password: process.env.NEO4J_PASSWORD,
+});
 
 // Controllers (route handlers)
 import * as userController from "./controllers/user";
 import * as apiController from "./controllers/api";
 import * as contactController from "./controllers/contact";
-
+import * as poolController from "./controllers/pool";
 
 // API keys and Passport configuration
-import * as passportConfig from "./config/passport";
+import * as auth from "./config/passport";
 
 // Create Express server
 const app = express();
 
-// Connect to MongoDB
-const mongoUrl = process.env.MONGOLAB_URI;
-(<any>mongoose).Promise = bluebird;
-mongoose.connect(mongoUrl, {useMongoClient: true}).then(
-  () => { console.log("MongoDB connection successful. "); },
-).catch(err => {
-  console.log("MongoDB connection error. Please make sure MongoDB is running. " + err);
-  // process.exit();
-});
-
 // Express configuration
 app.set("port", process.env.PORT || 3000);
-// app.set("views", path.join(__dirname, "../views"));
-// app.set("view engine", "pug");
 app.use(compression());
 app.use(logger("dev"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(expressValidator());
+
+const redisPort = process.env.REDIS_PORT;
 app.use(session({
-  resave: true,
+  resave: false,
   saveUninitialized: true,
   secret: process.env.SESSION_SECRET,
-  store: new MongoStore({
-    url: mongoUrl,
-    autoReconnect: true
-  })
+  store: new RedisStore({ host, port: redisPort })
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -90,18 +85,32 @@ app.post("/forgot", userController.forgot);
 app.get("/reset/:token", userController.getReset);
 app.post("/reset/:token", userController.postReset);
 app.post("/signup", userController.signup);
-app.get("/account", passportConfig.isAuthenticated, userController.account);
+app.get("/account", auth.isAuthenticated, userController.account);
+
+/**
+ * User routes.
+ */
+app.get("/user/:email", auth.isAuthenticated, userController.getUser);
+
+/**
+ * Pool routes.
+ */
+app.post("/pool", auth.isAuthenticated, poolController.postPool);
+app.post("/pool/:id/invite", auth.isAuthenticated, poolController.postInvite);
+app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
+app.get("/pool/:id", auth.isAuthenticated, poolController.getPool);
+app.get("/profile/pools", auth.isAuthenticated, poolController.getMyPools);
 
 // app.get("/contact", contactController.getContact);
 // app.post("/contact", contactController.postContact);
 
-app.post("/account/profile", passportConfig.isAuthenticated, userController.postUpdateProfile);
-app.post("/account/password", passportConfig.isAuthenticated, userController.postUpdatePassword);
-app.post("/account/delete", passportConfig.isAuthenticated, userController.postDeleteAccount);
-app.get("/account/unlink/:provider", passportConfig.isAuthenticated, userController.getOauthUnlink);
+app.post("/account/profile", auth.isAuthenticated, userController.postUpdateProfile);
+app.post("/account/password", auth.isAuthenticated, userController.postUpdatePassword);
+app.post("/account/delete", auth.isAuthenticated, userController.postDeleteAccount);
+app.get("/account/unlink/:provider", auth.isAuthenticated, userController.getOauthUnlink);
 
 // facebook login
-app.get("/api/facebook", passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getFacebook);
+app.get("/api/facebook", auth.isAuthenticated, auth.isAuthorized, apiController.getFacebook);
 
 /**
  * OAuth authentication routes. (Sign in)

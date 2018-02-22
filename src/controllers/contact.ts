@@ -41,7 +41,7 @@ export let postContact = (req: Request, res: Response) => {
     text: req.body.message
   };
 
-  transporter.sendMail(mailOptions, (err) => {
+  transporter.sendMail(mailOptions, (err: Error) => {
     if (err) {
       return res.redirect("/contact");
     }
