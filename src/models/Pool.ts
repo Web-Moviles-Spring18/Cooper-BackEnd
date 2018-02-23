@@ -16,6 +16,7 @@ export type PoolType = INode & {
     lat: number,
     long: number
   },
+  total: number,
   starts?: Date,
   ends: Date,
   picture?: string,

@@ -12,6 +12,7 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
   req.assert("name", "Pool name must be a alpha string between 3 and 31 characters").isAscii().isLength({ min: 3, max: 31 });
   req.assert("private", "Private must be a boolean").isBoolean();
   req.assert("paymentMethod", "Payment method must be credit or cash").isIn(["credit", "cash"]);
+  req.assert("total", "Total must be a number").isNumeric();
   req.assert("location", "Location must be a LatLnog").optional().isLatLong();
   req.assert("ends", "Ends must be a date").optional().toDate();
   req.assert("starts", "Ends must be a date").optional().toDate();
@@ -26,7 +27,6 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
   const pool = new Pool({
     name: req.body.name,
     private: req.body.private,
-    totalAmount: req.body.totalAmount,
     total: req.body.total || 0,
     currency: req.body.currency,
     paymentMethod: req.body.paymentMethod,
@@ -114,9 +114,12 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
 
     pool.getRelated("participatesIn", User, (err: Error, participants) => {
       if (err) { return next(err); }
+      let totalPaid = 0;
       participants.forEach((pair) => {
         delete pair.node.password;
+        totalPaid += (<any>pair.relation.properties).paid.low;
       });
+      pool.totalPaid = totalPaid;
       return res.status(200).send({ pool, participants });
     });
   });
