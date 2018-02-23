@@ -64,6 +64,9 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
  * Send an invite link to another user, only if the user owns the pool
  */
 export let postInvite = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user.email === req.body.email) {
+    return res.status(400).send("You cannot invite yourself");
+  }
   Pool.findById(req.params.id, (err, pool: PoolType) => {
     if (err) { return next(err); }
     if (!pool) {
@@ -83,9 +86,16 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
           return res.status(200).send("Invitation sent!.");
         }
 
-        console.log("Should send email");
-        res.status(200).send("Invitation sent!.");
-        // Send email, how?
+        pool.inviteUser(req.user, user, (err, result) => {
+          if (err) {
+            console.log(err);
+            return next(err);
+          }
+          if (process.env.NODE_ENV === "develop") {
+            console.log(result);
+          }
+          res.status(200).send("Invitation sent!");
+        });
       });
     });
   });
@@ -111,8 +121,23 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
+/**
+ * GET /profile/pools
+ * Get all pools that the logged in user participants in.
+ */
 export let getMyPools = (req: Request, res: Response, next: NextFunction) => {
   req.user.getRelated("participatesIn", Pool, (err: Error, pools: Relationship[]) => {
+    if (err) { return next(err); }
+    return res.status(200).send(pools);
+  });
+};
+
+/**
+ * GET /profile/own/pools
+ * Get all pools that the logged in user participants in.
+ */
+export let getOwnPools = (req: Request, res: Response, next: NextFunction) => {
+  req.user.getRelated("owns", Pool, (err: Error, pools: Relationship[]) => {
     if (err) { return next(err); }
     return res.status(200).send(pools);
   });

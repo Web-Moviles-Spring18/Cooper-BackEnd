@@ -100,6 +100,7 @@ app.post("/pool/:id/invite", auth.isAuthenticated, poolController.postInvite);
 app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 app.get("/pool/:id", auth.isAuthenticated, poolController.getPool);
 app.get("/profile/pools", auth.isAuthenticated, poolController.getMyPools);
+app.get("/profile/own/pools", auth.isAuthenticated, poolController.getOwnPools);
 
 // app.get("/contact", contactController.getContact);
 // app.post("/contact", contactController.postContact);

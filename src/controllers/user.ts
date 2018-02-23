@@ -1,11 +1,12 @@
 import * as async from "async";
 import * as crypto from "crypto";
-import * as nodemailer from "nodemailer";
 import * as passport from "passport";
 import { default as User, AuthToken, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { INode, Neo4jError } from "neo4js";
+import * as sgMail from "@sendgrid/mail";
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
  * POST /login
@@ -89,7 +90,6 @@ export let getUser = (req: Request, res: Response) => {
       return res.status(404).send(`User with email ${req.params.email} not found.`);
     } else {
       delete user.password;
-      delete user._id;
       delete user.label;
       res.status(200).send(user);
     }
@@ -102,7 +102,6 @@ export let getUser = (req: Request, res: Response) => {
  */
 export let account = (req: Request, res: Response) => {
   delete req.user.password;
-  delete req.user._id;
   res.status(200).send(req.user);
 };
 
@@ -247,21 +246,14 @@ export let postReset = (req: Request, res: Response, next: NextFunction) => {
         });
     },
     function sendResetPasswordEmail(user: UserType, done: Function) {
-      const transporter = nodemailer.createTransport({
-        service: "SendGrid",
-        auth: {
-          user: process.env.SENDGRID_USER,
-          pass: process.env.SENDGRID_PASSWORD
-        }
-      });
-      const mailOptions = {
-        to: user.email.toString(),
+      const msg = {
+        to: user.emai.toString(),
         from: "service@cooper.com",
         subject: "Your password has been changed",
         text: `Hello,\n\nThis is a confirmation that the password for your account ${user.email} has just been changed.\n`
       };
-      transporter.sendMail(mailOptions, (err: Error) => {
-        res.status(200).send("Success! Your password has been changed.");
+      sgMail.send(msg, false, (err: Error) => {
+        res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
         done(err);
       });
     }
@@ -304,14 +296,7 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
       });
     },
     function sendForgotPasswordEmail(token: AuthToken, user: UserType, done: Function) {
-      const transporter = nodemailer.createTransport({
-        service: "SendGrid",
-        auth: {
-          user: process.env.SENDGRID_USER,
-          pass: process.env.SENDGRID_PASSWORD
-        }
-      });
-      const mailOptions = {
+      const msg = {
         to: user.email.toString(),
         from: "service@cooper.com",
         subject: "Reset your password on Cooper",
@@ -320,7 +305,7 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
           http://${req.headers.host}/reset/${token}\n\n
           If you did not request this, please ignore this email and your password will remain unchanged.\n`
       };
-      transporter.sendMail(mailOptions, (err: Error) => {
+      sgMail.send(msg, false, (err: Error) => {
         res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
         done(err);
       });

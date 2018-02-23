@@ -165,7 +165,7 @@ export const model = (label: string, schema: Schema) => {
     }
 
     async getRelated(relName: String, otherModel: Model, next: (err: Neo4jError, res: Relationship[]) => void) {
-      const query = `MATCH (u:${label})-[r:${relName}]-(v) RETURN r, v`;
+      const query = `MATCH (u:${label})-[r:${relName}]-(v) WHERE ID(u) = ${this._id} RETURN r, v`;
       const pairs: Relationship[] = [];
       session.run(query).subscribe({
         onCompleted(sum: ResultSummary) {
@@ -175,6 +175,7 @@ export const model = (label: string, schema: Schema) => {
         onNext(response: NeoRecord) {
           const relation = response._fields[0];
           const node = response._fields[1];
+          node.properties._id = node.identity;
           flatNumericProps(node.properties);
           flatNumericProps(relation);
           flatNumericProps(relation.properties);
