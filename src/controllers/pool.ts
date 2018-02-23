@@ -116,8 +116,12 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
       if (err) { return next(err); }
       let totalPaid = 0;
       participants.forEach((pair) => {
+        console.log(pair);
         delete pair.node.password;
-        totalPaid += (<any>pair.relation.properties).paid.low;
+        // FIXME: define relation type
+        if ((<any>pair.relation.properties).paid) {
+          totalPaid += (<any>pair.relation.properties).paid.low;
+        }
       });
       pool.totalPaid = totalPaid;
       return res.status(200).send({ pool, participants });
