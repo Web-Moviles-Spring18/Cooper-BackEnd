@@ -4,7 +4,7 @@ import * as passport from "passport";
 import { default as User, AuthToken, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
-import { INode, Neo4jError } from "neo4js";
+import { INode, Neo4jError, Relationship } from "neo4js";
 import * as sgMail from "@sendgrid/mail";
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -136,7 +136,7 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
       if (err) {
         return res.status(400).send("The email address you have entered is already associated with an account.");
       }
-      res.status(200).send({message: "Profile information has been updated.", });
+      res.status(200).send("Profile information has been updated.");
     });
   });
 };
@@ -162,6 +162,28 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
       if (err) { return next(err); }
       res.status(200).send("Password has been changed.");
     });
+  });
+};
+
+/**
+ * POST /friend/
+ * Send friend request.
+ */
+export let postFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+  // TODO: Define friend request flow.
+};
+
+/**
+ * GET /profile/friends
+ * All user account.
+ */
+export let getFriends = (req: Request, res: Response, next: NextFunction) => {
+  req.user.getRelated("friendOf", User, (err: Error, getFriends: Relationship[]) => {
+    if (err) { return next(err); }
+    getFriends.forEach((pair) => {
+      delete pair.node.password;
+    });
+    return res.status(200).send(getFriends);
   });
 };
 

@@ -113,6 +113,7 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
     }
 
     pool.getRelated("participatesIn", User, (err: Error, participants) => {
+      if (err) { return next(err); }
       participants.forEach((pair) => {
         delete pair.node.password;
       });
