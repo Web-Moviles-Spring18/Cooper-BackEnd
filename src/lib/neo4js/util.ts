@@ -4,6 +4,10 @@ export const isSchemaTypeOpts = (propDef: PropDef): propDef is SchemaTypeOpts =>
   (<SchemaTypeOpts>propDef).type !== undefined
 );
 
+export const isRegExp = (prop: any): prop is RegExp => (
+  prop.constructor === RegExp
+);
+
 export const checkType = (key: string, value: NeoType, propDef: PropDef): NeoType => {
   if (propDef === Date && value.constructor === String) {
     console.log("return to date type");

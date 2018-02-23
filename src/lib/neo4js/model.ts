@@ -1,6 +1,6 @@
 import { session } from ".";
 import { Schema } from "./Schema";
-import { isSchemaTypeOpts, toQueryProps, createProps, checkType, flatNumericProps } from "./util";
+import { isSchemaTypeOpts, toQueryProps, createProps, checkType, flatNumericProps, isRegExp } from "./util";
 import { NeoRecord, ResultSummary, SchemaTypeOpts, Neo4jError, NeoProperties, FindCallback, PropDef, NeoType, ISchema, INode, Model, Relationship } from "neo4js";
 import { NextFunction } from "express";
 
@@ -230,7 +230,19 @@ export const model = (label: string, schema: Schema) => {
       });
     }
 
-    static async find(match: NeoProperties, next: FindCallback, limit?: number) {
+    static async find(match: NeoProperties | RegExp, next: FindCallback, limit?: number) {
+      const regexps: { [key: string] : RegExp } = {};
+      for (const prop in match) {
+        const value = (<any>match)[prop];
+        if (isRegExp(value)) {
+          regexps[prop] = value;
+          delete (<any>match)[prop];
+        }
+      }
+      match = (<NeoProperties>match);
+
+      // TODO: get regexps and create a where query to match regexps.
+
       const matchString = toQueryProps(match);
 
       let query = `MATCH (n:${label} ${matchString === "p{}" ? "" : matchString}) RETURN n`;

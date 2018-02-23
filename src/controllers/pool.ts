@@ -26,7 +26,7 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
 
   const pool = new Pool({
     name: req.body.name,
-    private: req.body.private,
+    private: req.body.private || true,
     total: req.body.total || 0,
     currency: req.body.currency,
     paymentMethod: req.body.paymentMethod,
@@ -127,6 +127,14 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
       return res.status(200).send({ pool, participants });
     });
   });
+};
+
+/**
+ * GET /pool/search/:name
+ * Find pools that match name.
+ */
+export let getSearchPool = (req: Request, res: Response, next: NextFunction) => {
+
 };
 
 /**

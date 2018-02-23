@@ -29,7 +29,10 @@ const poolSchema = new Schema({
     required: true,
     index: true
   },
-  private: Boolean,
+  private: {
+    type: Boolean,
+    required: true
+  },
   invite: {
     type: String,
     required: true,
@@ -84,7 +87,7 @@ poolSchema.methods.inviteUser = function(from: UserType, user: UserType, cb: (er
     from: "service@cooper.com",
     text: `Hello,\n\n${displayName} just invited you to join his pool. \n\n` +
     `If you want to join, please click the following link:\n` +
-    `${process.env.HOST_URI}/join/${pool.invite}`
+    `http://${process.env.HOST_URI}/join/${pool.invite}`
   };
   sgMail.send(msg, false, cb);
 };
