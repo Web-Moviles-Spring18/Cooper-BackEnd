@@ -20,6 +20,10 @@ export let login = (req: Request, res: Response, next: NextFunction) => {
   const errors = req.validationErrors();
 
   if (errors) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("Error on login attempt:");
+      console.error(errors);
+    }
     return res.status(400).send(errors);
   }
 
@@ -54,6 +58,12 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   req.assert("confirmPassword", "Passwords do not match").equals(req.body.password);
   req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
 
+  // optional
+  req.assert("name", "Name must be a string").optional().isAlphanumeric();
+  req.assert("gender", "Gender must be a string").optional().isAlphanumeric();
+  req.assert("location", "Location must be a string").optional().isAlphanumeric();
+  req.assert("picture", "Picture must be a string").optional().isAlphanumeric();
+
   const errors = req.validationErrors();
 
   if (errors) {
@@ -64,6 +74,19 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
     email: req.body.email,
     password: req.body.password
   });
+
+  if (req.body.name) {
+    user.name = req.body.name;
+  }
+  if (req.body.gender) {
+    user.gender = req.body.gender;
+  }
+  if (req.body.location) {
+    user.location = req.body.location;
+  }
+  if (req.body.picture) {
+    user.picture = req.body.picture;
+  }
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { next(err); }

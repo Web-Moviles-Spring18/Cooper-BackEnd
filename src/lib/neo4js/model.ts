@@ -321,7 +321,7 @@ const _save = (self: INode, label: String, schema: Schema,
     const value = (<NeoType>self[key]);
     if (isSchemaTypeOpts(propDef)) {
       const opts = (<SchemaTypeOpts>propDef);
-      checkType(key, value, opts.type);
+      self[key] = checkType(key, value, opts.type);
       if (opts.uppercase) {
         self[key] = (<string>self[key]).toUpperCase();
       }

@@ -123,7 +123,7 @@ export let isAuthenticated = (req: Request, res: Response, next: NextFunction) =
   if (req.isAuthenticated()) {
     return next();
   }
-  res.status(401).send("Not authenticateed.");
+  res.status(401).send("Not authenticated.");
 };
 
 /**

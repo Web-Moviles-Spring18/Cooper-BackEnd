@@ -15,14 +15,14 @@ export type UserType = INode & {
   email: string,
   password: string,
   passwordResetToken?: string,
-  passwordResetExpires?: Date,
+  passwordResetExpires?: Date, // TODO: Fix dates bug
   tokens?: AuthToken[],
   facebook?: string,
   twitter?: string,
   google?: string,
   name?: string,
   gender?: string,
-  location?: string,
+  location?: string, // TODO: make this a latLng object
   picture?: string,
   owns: (pool: INode, props?: NeoProperties) => Promise<void>,
   friendOf: (friend: INode, props?: NeoProperties) => Promise<void>,

@@ -4,12 +4,17 @@ export const isSchemaTypeOpts = (propDef: PropDef): propDef is SchemaTypeOpts =>
   (<SchemaTypeOpts>propDef).type !== undefined
 );
 
-export const checkType = (key: string, value: NeoType, propDef: PropDef) => {
+export const checkType = (key: string, value: NeoType, propDef: PropDef): NeoType => {
+  if (propDef === Date && value.constructor === String) {
+    console.log("return to date type");
+    return new Date(<string>value);
+  }
   if (value.constructor !== propDef) {
     throw new Error("Type mismatch: "
       + `expected ${key} to be ${(<Function>propDef).name} `
       + `but received ${value.constructor.name}.`);
   }
+  return value;
 };
 
 // Stringify a json to neo4j properties.
