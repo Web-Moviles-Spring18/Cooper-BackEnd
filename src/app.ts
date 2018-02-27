@@ -92,6 +92,7 @@ app.get("/account", auth.isAuthenticated, userController.account);
  * User routes.
  */
 app.get("/user/:email", auth.isAuthenticated, userController.getUser);
+app.search("/user/:name", userController.searchUser);
 
 /**
  * Pool routes.
@@ -102,6 +103,7 @@ app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 app.get("/pool/:id", auth.isAuthenticated, poolController.getPool);
 app.get("/profile/pools", auth.isAuthenticated, poolController.getMyPools);
 app.get("/profile/own/pools", auth.isAuthenticated, poolController.getOwnPools);
+app.search("/pool/:name", poolController.searchPool);
 
 // app.get("/contact", contactController.getContact);
 // app.post("/contact", contactController.postContact);

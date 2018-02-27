@@ -33,6 +33,10 @@ export const toQueryProps = (object: NeoProperties) => {
   return propsString.substr(0, propsString.length - 2) + " }";
 };
 
+export const toRegExQuery = (nodeName: string, object: NeoProperties, separator: "AND" | "OR" = "AND") => (
+  "WHERE " + Object.keys(object).map(key => `${nodeName}.${key} =~ "${object[key]}"`).join(` ${separator} `)
+);
+
 // extract properties from a neo4j query result (record).
 export const createProps = (record: NeoRecord): NeoProperties => {
   const props: NeoProperties = {};

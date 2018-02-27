@@ -105,6 +105,21 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
+/**
+ * GET /pool/search/:name
+ * Find pools that match name.
+ */
+export let searchUser = (req: Request, res: Response, next: NextFunction) => {
+  req.assert("search", "Email must be an email").optional().isEmail();
+  User.findLike({
+    name: `(?i).*${req.params.name}.*`,
+    email: `(?i).*${req.params.name}.*`
+  }, {}, (err, result) => {
+    if (err) { return next(err); }
+    res.status(200).send(result);
+  }, -1, "OR");
+};
+
 export let getUser = (req: Request, res: Response) => {
   User.findOne({ email: req.params.email }, (err, user: UserType) => {
     if (err) {

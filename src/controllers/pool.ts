@@ -12,7 +12,6 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
   req.assert("name", "Pool name must be a alpha string between 3 and 31 characters").isAscii().isLength({ min: 3, max: 31 });
   req.assert("private", "Private must be a boolean").isBoolean();
   req.assert("paymentMethod", "Payment method must be credit or cash").isIn(["credit", "cash"]);
-  req.assert("total", "Total must be a number").isNumeric();
   req.assert("location", "Location must be a LatLnog").optional().isLatLong();
   req.assert("ends", "Ends must be a date").optional().toDate();
   req.assert("starts", "Ends must be a date").optional().toDate();
@@ -26,7 +25,7 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
 
   const pool = new Pool({
     name: req.body.name,
-    private: req.body.private || true,
+    private: req.body.private,
     total: req.body.total || 0,
     currency: req.body.currency,
     paymentMethod: req.body.paymentMethod,
@@ -42,7 +41,6 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
 
   pool.save((err: Error) => {
     if (err) { return next(err); }
-    console.log(req.user.owns);
     req.user.owns(pool).then(() => {
       req.user.participatesIn(pool).then(() => {
         res.status(200).send({
@@ -88,7 +86,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
 
         pool.inviteUser(req.user, user, (err, result) => {
           if (err) {
-            console.log(err);
+            console.error(err);
             return next(err);
           }
           if (process.env.NODE_ENV === "develop") {
@@ -116,7 +114,6 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
       if (err) { return next(err); }
       let totalPaid = 0;
       participants.forEach((pair) => {
-        console.log(pair);
         delete pair.node.password;
         // FIXME: define relation type
         if ((<any>pair.relation.properties).paid) {
@@ -133,8 +130,11 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
  * GET /pool/search/:name
  * Find pools that match name.
  */
-export let getSearchPool = (req: Request, res: Response, next: NextFunction) => {
-
+export let searchPool = (req: Request, res: Response, next: NextFunction) => {
+  Pool.findLike({ name: `(?i).*${req.params.name}.*` }, {}, (err, result) => {
+    if (err) { return next(err); }
+    res.status(200).send(result);
+  });
 };
 
 /**
