@@ -72,7 +72,7 @@ export const model = (label: string, schema: Schema) => {
         const model = schema.relations[relationName].model;
         this[relationName] = async (other: NeoNode, props?: NeoProperties): Promise<void> => {
           if (!(other instanceof model)) {
-            throw new Error(`Wrong node type: ${(<NeoNode>other).label} in relation ${relationName}`);
+            throw new Error(`Wrong node type: ${(<NeoNode>other).label} in relation ${relationName}.`);
           }
 
           // TODO: Check that properties meet propDef.
@@ -237,7 +237,6 @@ export const model = (label: string, schema: Schema) => {
       if (limit > 0) {
         query += ` LIMIT ${limit}`;
       }
-      console.log(query);
       const nodes: INode[] = [];
       let found = false;
       session.run(query).subscribe({
