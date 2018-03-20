@@ -1,13 +1,5 @@
-import * as nodemailer from "nodemailer";
+import * as sgMail from "@sendgrid/mail";
 import { Request, Response } from "express";
-
-const transporter = nodemailer.createTransport({
-  service: "SendGrid",
-  auth: {
-    user: process.env.SENDGRID_USER,
-    pass: process.env.SENDGRID_PASSWORD
-  }
-});
 
 /**
  * GET /contact
@@ -34,14 +26,14 @@ export let postContact = (req: Request, res: Response) => {
     return res.redirect("/contact");
   }
 
-  const mailOptions = {
+  const msg = {
     to: "your@email.com",
     from: `${req.body.name} <${req.body.email}>`,
     subject: "Contact Form",
     text: req.body.message
   };
 
-  transporter.sendMail(mailOptions, (err) => {
+  sgMail.send(msg, false, (err: Error) => {
     if (err) {
       return res.redirect("/contact");
     }

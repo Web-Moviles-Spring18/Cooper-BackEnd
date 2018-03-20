@@ -5,18 +5,19 @@ import * as passportFacebook from "passport-facebook";
 import * as _ from "lodash";
 
 // import { User, UserType } from '../models/User';
-import { default as User } from "../models/User";
+import { default as User, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
+import { Neo4jError } from "neo4js";
 
 const LocalStrategy = passportLocal.Strategy;
 const FacebookStrategy = passportFacebook.Strategy;
 
 passport.serializeUser<any, any>((user, done) => {
-  done(undefined, user.id);
+  done(undefined, user.email);
 });
 
-passport.deserializeUser((id, done) => {
-  User.findById(id, (err, user) => {
+passport.deserializeUser((email, done) => {
+  User.findOne({ email: email.toString() }, (err, user) => {
     done(err, user);
   });
 });
@@ -25,8 +26,8 @@ passport.deserializeUser((id, done) => {
 /**
  * Sign in using Email and Password.
  */
-passport.use(new LocalStrategy({ usernameField: "email" }, (email, password, done) => {
-  User.findOne({ email: email.toLowerCase() }, (err, user: any) => {
+passport.use(new LocalStrategy({ usernameField: "email" }, (email: string, password: string, done: Function) => {
+  User.findOne({ email: email.toLowerCase() }, (err: Neo4jError, user: UserType) => {
     if (err) { return done(err); }
     if (!user) {
       return done(undefined, false, { message: "Invalid email or password." });
@@ -67,14 +68,14 @@ passport.use(new FacebookStrategy({
   callbackURL: "/auth/facebook/callback",
   profileFields: ["name", "email", "link", "locale", "timezone"],
   passReqToCallback: true
-}, (req: any, accessToken, refreshToken, profile, done) => {
+}, (req: any, accessToken: string, refreshToken: string, profile: any, done: Function) => {
   if (req.user) {
     User.findOne({ facebook: profile.id }, (err, existingUser) => {
       if (err) { return done(err); }
       if (existingUser) {
         done(err);
       } else {
-        User.findById(req.user.id, (err, user: any) => {
+        User.findOne({ email: req.user.email }, (err, user: any) => {
           if (err) { return done(err); }
           user.facebook = profile.id;
           user.tokens.push({ kind: "facebook", accessToken });
@@ -122,7 +123,7 @@ export let isAuthenticated = (req: Request, res: Response, next: NextFunction) =
   if (req.isAuthenticated()) {
     return next();
   }
-  res.status(401).send("Not authenticateed.");
+  res.status(401).send("Not authenticated.");
 };
 
 /**

@@ -1,77 +1,69 @@
 import * as bcrypt from "bcrypt-nodejs";
 import * as crypto from "crypto";
-import * as mongoose from "mongoose";
-import * as uniqueValidator from "mongoose-unique-validator";
-import { EMAIL_TAKEN, INVALID_EMAIL } from "../constants";
+
 import { NextFunction } from "express";
-
-export type UserModel = mongoose.Document & {
-  email: string,
-  password: string,
-  passwordResetToken: string,
-  passwordResetExpires: Date,
-
-  facebook: string,
-  tokens: AuthToken[],
-
-  profile: {
-    name: string,
-    gender: string,
-    location: string,
-    website: string,
-    picture: string
-  },
-
-  comparePassword: (candidatePassword: string, cb: (err: any, isMatch: any) => {}) => void,
-  gravatar: (size: number) => string
-};
+import { Schema, model } from "../lib/neo4js";
+import { INode, Model, NeoProperties } from "neo4js";
+import { default as Pool, PoolType } from "./Pool";
 
 export type AuthToken = {
   accessToken: string,
   kind: string
 };
 
-const userSchema = new mongoose.Schema({
+export type UserType = INode & {
+  email: string,
+  password: string,
+  passwordResetToken?: string,
+  passwordResetExpires?: Date, // TODO: Fix dates bug
+  tokens?: AuthToken[],
+  facebook?: string,
+  twitter?: string,
+  google?: string,
+  name?: string,
+  gender?: string,
+  location?: string, // TODO: make this a latLng object
+  picture?: string,
+  owns: (pool: INode, props?: NeoProperties) => Promise<void>,
+  friendOf: (friend: INode, props?: NeoProperties) => Promise<void>,
+  participatesIn: (pool: INode, props?: NeoProperties) => Promise<void>,
+  comparePassword: (candidatePassword: string, cb: (err: any, isMatch: any) => any) => void,
+  gravatar: (size: number) => string
+};
+
+const userSchema = new Schema({
   email: {
     type: String,
     lowercase: true,
+    required: true,
+    match: /\S+@\S+\.\S+/,
     unique: true,
-    required: [true, "can't be blank"],
-    match: [/\S+@\S+\.\S+/, INVALID_EMAIL],
     index: true
-   },
+  },
   password: String,
   passwordResetToken: String,
   passwordResetExpires: Date,
-
+  tokens: Array,
   facebook: String,
   twitter: String,
   google: String,
-  tokens: Array,
+  name: String,
+  gender: {
+    type: String,
+    enum: ["Male", "Female"]
+  },
+  location: String,
+  picture: String
+});
 
-  profile: {
-    name: String,
-    gender: {
-      type: String,
-      enum: ["Male", "Female"]
-    },
-    location: String,
-    website: String,
-    picture: String
-  }
-}, { timestamps: true });
-
-userSchema.plugin(uniqueValidator, {message: EMAIL_TAKEN});
-
-/**
- * Password hash middleware.
- */
-userSchema.pre("save", function hashPassword(next: NextFunction) {
+userSchema.pre("save", function hashPassword(next: Function) {
   const user = this;
-  if (!user.isModified("password")) { return next(); }
+  if (user.tokens) {
+    user.tokens = JSON.stringify(user.tokens);
+  }
   bcrypt.genSalt(10, (err, salt) => {
     if (err) { return next(err); }
-    bcrypt.hash(user.password, salt, undefined, (err: mongoose.Error, hash) => {
+    bcrypt.hash(user.password, salt, undefined, (err: Error, hash) => {
       if (err) { return next(err); }
       user.password = hash;
       next();
@@ -79,12 +71,19 @@ userSchema.pre("save", function hashPassword(next: NextFunction) {
   });
 });
 
-userSchema.methods.comparePassword = function (candidatePassword: string, cb: (err: any, isMatch: any) => {}) {
-  bcrypt.compare(candidatePassword, this.password, (err: mongoose.Error, isMatch: boolean) => {
+userSchema.pre("findOne", function parseTokens(next: Function) {
+  const user = this;
+  if (user.tokens) {
+    user.tokens = JSON.parse(user.tokens || "{}");
+  }
+  next();
+});
+
+userSchema.methods.comparePassword = function (candidatePassword: string, cb: (err: any, isMatch: any) => any) {
+  bcrypt.compare(candidatePassword, this.password, (err, isMatch) => {
     cb(err, isMatch);
   });
 };
-
 
 /**
  * Helper method for getting user's gravatar.
@@ -100,6 +99,19 @@ userSchema.methods.gravatar = (size: number) => {
   return `https://gravatar.com/avatar/${md5}?s=${size}&d=retro`;
 };
 
-// export const User: UserType = mongoose.model<UserType>('User', userSchema);
-const User = mongoose.model("User", userSchema);
+const User = model("User", userSchema);
+
+userSchema.relate("friendOf", User);
+userSchema.relate("owns", Pool);
+userSchema.relate("participatesIn", Pool, {
+  debt: {
+    type: Number,
+    default: 0
+  },
+  paid: {
+    type: Number,
+    default: 0
+  }
+});
+
 export default User;

@@ -3,7 +3,13 @@
 ### Installation
 Run `npm install`.
 
-[Install mongo](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x/#install-mongodb-community-edition).
+Install [neo4j](https://neo4j.com/docs/operations-manual/current/installation/), enter the web interface and set a new password.
+It has been tested only with the docker version of neo4j downloaded from the [Kitematic](https://kitematic.com/) app.
+
+> **Important:** Make sure that the variables in the `.env` file are properly set,
+because the docker version of neo4j doesn't use the default ports.
+
+Same for (redis)[https://redis.io/topics/quickstart]. Or just download the docker image from Kitematic.
 
 Copy `.env.example` to `.env` and change the settings as needed.
 
@@ -12,14 +18,14 @@ Run `npm run build` to transpile the code to javascript, run this before `start`
 
 Run `npm run debug` to start server in development mode with live reload.
 
-Run `npm test` to run the tests (duh).
+Run `npm test` to run the tests.
 
 ## Project Structure
 The `test` folder remain top level as expected.
 
 The full folder structure of this app is explained below:
 
-> **Note!** Make sure you have already built the app using `npm run build`
+> **Note!** Make sure you have already built the app using `npm run build` before `npm start`.
 
 | Name | Description |
 | ------------------------ | --------------------------------------------------------------------------------------------- |
@@ -29,7 +35,7 @@ The full folder structure of this app is explained below:
 | **src**                  | Contains your source code that will be compiled to the dist dir                               |
 | **src/config**           | Passport authentication strategies and login middleware. Add other complex config code here   |
 | **src/controllers**      | Controllers define functions that respond to various http requests                            |
-| **src/models**           | Models define Mongoose schemas that will be used in storing and retrieving data from MongoDB  |
+| **src/models**           | Models define neo4js schemas that will be used in storing and retrieving data from Neo4j  |
 | **src/public**           | Static assets that will be used client side                                                   |
 | **src/types**            | Holds .d.ts files not found on DefinitelyTyped. Covered more in this [section](#type-definition-dts-files)          |
 | **src**/server.ts        | Entry point to your express app                                                               |
@@ -37,7 +43,6 @@ The full folder structure of this app is explained below:
 | **views**                | Views define how your app renders on the client. In this case we're using pug                 |
 | .env.example             | API keys, tokens, passwords, database URI. Clone this, but don't check it in to public repos. |
 | .travis.yml              | Used to configure Travis CI build                                                             |
-| .copyStaticAssets.ts     | Build script that copies images, fonts, and JS libs to the dist folder                        |
 | jest.config.js           | Used to configure Jest                                                                        |
 | package.json             | File that contains npm dependencies as well as [build scripts](#what-if-a-library-isnt-on-definitelytyped)                          |
 | tsconfig.json            | Config settings for compiling server code written in TypeScript                               |
@@ -49,7 +54,7 @@ If you're concerned about compile time, the main watch task takes ~2s to refresh
 
 ### Configuring TypeScript compilation
 TypeScript uses the file `tsconfig.json` to adjust project compile options.
-Let's dissect this project's `tsconfig.json`, starting with the `compilerOptions` which details how your project is compiled. 
+Let's dissect this project's `tsconfig.json`, starting with the `compilerOptions` which details how your project is compiled.
 
 ```json
     "compilerOptions": {
@@ -108,4 +113,4 @@ Below is a list of all the scripts available:
 | `build-sass`              | Compiles all `.scss` files to `.css` files                                                        |
 | `watch-sass`              | Same as `build-sass` but continuously watches `.scss` files and re-compiles when needed             |
 | `tslint`                  | Runs TSLint on project files                                                                      |
-| `copy-static-assets`      | Calls script that copies JS libs, fonts, and images to dist directory                             |
+|
