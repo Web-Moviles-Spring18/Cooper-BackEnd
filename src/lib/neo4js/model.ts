@@ -56,7 +56,7 @@ export const model = (label: string, schema: Schema) => {
       }
 
       // if an id already exists this node is already in the database.
-      if (uid) {
+      if (Number.isInteger(uid)) {
         this._id = uid;
       }
 
@@ -102,6 +102,25 @@ export const model = (label: string, schema: Schema) => {
       } catch (e) {
         fn(e);
       }
+    }
+
+    async updateRelation(match: NeoProperties, newProps: NeoProperties, next: NextFunction) {
+      const query = `MATCH (n:${label})-[r]-(v ${toQueryProps(match)}) ` +
+                  `WHERE ID(n) = ${this._id} ` +
+                  `SET r = ${toQueryProps(newProps)}`;
+
+      session.run(query).subscribe({
+        onCompleted(summary: ResultSummary) {
+          console.log(summary);
+        },
+        onNext(record: NeoRecord) {
+          console.log(record);
+        },
+        onError(err: Neo4jError) {
+          console.error(err);
+        }
+      });
+      next();
     }
 
     // TODO: Pagination
@@ -173,12 +192,11 @@ export const model = (label: string, schema: Schema) => {
         },
 
         onNext(response: NeoRecord) {
-          const relation = response._fields[0];
+          const relation = response._fields[0].properties;
           const node = response._fields[1];
-          node.properties._id = node.identity;
+          node.properties._id = node.identity.low;
           flatNumericProps(node.properties);
           flatNumericProps(relation);
-          flatNumericProps(relation.properties);
           pairs.push({ relation, node: new otherModel(node.properties) });
         },
 
@@ -211,8 +229,8 @@ export const model = (label: string, schema: Schema) => {
 
     async hasRelationWith(name: String, other: NeoNode, next: (err: Neo4jError, res: boolean) => void) {
       const query = `MATCH (u:${label}), (v:${other.label}) ` +
-      `WHERE ID(u) = ${this._id} AND ID(v) = ${other._id} ` +
-      `RETURN EXISTS((u)-[:${name}]-(v))`;
+                    `WHERE ID(u) = ${this._id} AND ID(v) = ${other._id} ` +
+                    `RETURN EXISTS((u)-[:${name}]-(v))`;
 
       session.run(query).subscribe({
         onCompleted(summary: ResultSummary) { },
@@ -393,8 +411,7 @@ const _save = (self: INode, label: String, schema: Schema,
       self[key] = checkType(key, value, opts.type);
       if (opts.uppercase) {
         self[key] = (<string>self[key]).toUpperCase();
-      }
-      if (opts.lowercase) {
+      } else if (opts.lowercase) {
         self[key] = (<string>self[key]).toLowerCase();
       }
       if (opts.enum && opts.enum.indexOf(value) === -1) {
@@ -427,6 +444,7 @@ const _save = (self: INode, label: String, schema: Schema,
     },
     onNext(record: NeoRecord) {
       self._id = record._fields[0].identity.low;
+      console.log(self._id);
       if (process.env.NODE_ENV === "development") {
         console.log(record);
       }

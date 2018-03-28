@@ -99,6 +99,7 @@ app.get("/user/search/:name", userController.searchUser);
  */
 app.post("/pool", auth.isAuthenticated, poolController.postPool);
 app.post("/pool/:id/invite", auth.isAuthenticated, poolController.postInvite);
+app.post("/pool/:id", auth.isAuthenticated, poolController.postUpdateUserPool);
 app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 app.get("/pool/:id", auth.isAuthenticated, poolController.getPool);
 app.get("/profile/pools", auth.isAuthenticated, poolController.getMyPools);

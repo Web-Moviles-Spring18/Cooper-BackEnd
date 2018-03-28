@@ -58,6 +58,51 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
+ * POST /pool/:id
+ * Update status of a user in a pool (i.e.: amount, etc.).
+ * Requires owner status.
+ */
+export let postUpdateUserPool = (req: Request, res: Response, next: NextFunction) => {
+  req.assert("userInfo").isJSON();
+  req.assert("userInfo.debt", "Must be a number").optional().isNumeric();
+  req.assert("userInfo.paid", "Must be a number").optional().isNumeric();
+
+  Pool.findById(req.params.id, (err, pool: PoolType) => {
+    if (err) { return next(err); }
+    if (!pool) {
+      return res.status(404).send("Pool not found.");
+    }
+
+    req.user.hasRelationWith("owns", pool, (err: Error, userOwnsPool: boolean) => {
+      if (err) { return next(err); }
+      if (!userOwnsPool) {
+        return res.status(401).send("You don't own this pool");
+      }
+
+      req.assert("userEmail", "Invalid email").isEmail();
+      req.sanitize("userEmail").normalizeEmail({ gmail_remove_dots: false });
+
+      pool.getRelated("participatesIn", User, (err, participants) => {
+        let totalPaid = req.body.userInfo.debt || 0;
+        participants.forEach((pair) => {
+          if ((<any>pair.relation).paid && pair.node.email !== req.body.userEmail) {
+            totalPaid += (<any>pair.relation).paid;
+          }
+        });
+        if (totalPaid > pool.total) {
+          return res.status(400).send(`Too much debt for user ${req.body.userEmail}`);
+        }
+        pool.updateRelation({ email: req.body.userEmail }, {
+          debt: req.body.userInfo.debt, paid: req.body.userInfo.paid
+        }, () => {
+          res.status(200).send("OK");
+        });
+      });
+    });
+  });
+};
+
+/**
  * POST /pool/:id/invite
  * Send an invite link to another user, only if the user owns the pool
  */
@@ -81,7 +126,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
       User.findOne({ email: req.body.email }, (err, user: UserType) => {
         if (err) { return next(err); }
         if (!user) {
-          return res.status(200).send("Invitation sent!.");
+          return res.status(200).send("Invitation sent!");
         }
 
         pool.inviteUser(req.user, user, (err, result) => {
@@ -116,8 +161,8 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
       participants.forEach((pair) => {
         delete pair.node.password;
         // FIXME: define relation type
-        if ((<any>pair.relation.properties).paid) {
-          totalPaid += (<any>pair.relation.properties).paid.low;
+        if ((<any>pair.relation).paid) {
+          totalPaid += (<any>pair.relation).paid;
         }
       });
       pool.totalPaid = totalPaid;

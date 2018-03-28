@@ -67,7 +67,8 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   const errors = req.validationErrors();
 
   if (errors) {
-    return res.status(400).send(errors);
+    console.log(errors);
+    // return res.status(400).send(errors);
   }
 
   const user = new User({
@@ -90,7 +91,9 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { next(err); }
+    console.log(existingUser);
     if (existingUser) {
+      console.log("caca");
       return res.status(400).send("Account with that email address already exists.");
     }
     user.save((err: Error) => {

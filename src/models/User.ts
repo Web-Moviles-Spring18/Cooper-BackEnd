@@ -40,7 +40,10 @@ const userSchema = new Schema({
     unique: true,
     index: true
   },
-  password: String,
+  password: {
+    type: String,
+    required: true
+  },
   passwordResetToken: String,
   passwordResetExpires: Date,
   tokens: Array,
