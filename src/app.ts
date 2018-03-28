@@ -50,8 +50,6 @@ const options = {
 // use cors middleware
 app.use(cors(options));
 
-
-
 // Express configuration
 app.set("port", process.env.PORT || 3000);
 app.use(compression());
@@ -95,6 +93,7 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
 /**
  * Primary app routes.
  */
+ app.get("/hello", (req, res) => res.status(200).send("Hello there!"));
 app.post("/login", userController.login);
 app.get("/logout", userController.logout);
 app.post("/forgot", userController.forgot);
