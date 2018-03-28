@@ -13,6 +13,7 @@ import * as bluebird from "bluebird";
 import * as bcrypt from "bcrypt-nodejs";
 import * as crypto from "crypto";
 import * as neo from "./lib/neo4js";
+import * as cors from "cors";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
@@ -36,6 +37,20 @@ import * as auth from "./config/passport";
 
 // Create Express server
 const app = express();
+
+// Options for cors midddleware
+const options = {
+  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "X-Access-Token"],
+  credentials: true,
+  methods: "GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE",
+  origin: "*",
+  preflightContinue: false
+};
+
+// use cors middleware
+app.use(cors(options));
+
+
 
 // Express configuration
 app.set("port", process.env.PORT || 3000);
@@ -123,5 +138,8 @@ app.get("/auth/facebook", passport.authenticate("facebook", { scope: ["email", "
 app.get("/auth/facebook/callback", passport.authenticate("facebook", { failureMessage: "Something went terribly wrong", failWithError: true }), (req, res) => {
   res.status(200).send("success! Loged in with facebook.");
 });
+
+// enable pre-flight
+app.options("*", cors(options));
 
 module.exports = app;

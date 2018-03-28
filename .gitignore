@@ -36,3 +36,5 @@ dist/**/*
 
 # Ignore code coverage
 coverage/**/*
+
+package-lock.json
