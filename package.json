@@ -23,7 +23,7 @@
   "homepage": "https://github.com/Web-Moviles-Spring18/Lab-Web#readme",
   "scripts": {
     "start": "npm run serve",
-    "build": "npm run tslint && npm run build-ts",
+    "build": "npm run tslint && npm run build-ts && npm run copy-static-assets",
     "serve": "node dist/server.js",
     "watch-node": "nodemon dist/server.js",
     "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
@@ -32,6 +32,7 @@
     "watch-ts": "tsc -w",
     "tslint": "tslint -c tslint.json -p tsconfig.json",
     "debug": "npm run build && npm run watch-debug",
+    "copy-static-assets": "ts-node copyStaticAssets.ts",
     "serve-debug": "nodemon --inspect dist/server.js",
     "postman": "newman run https://www.getpostman.com/collections/13562d59e4570bd34466",
     "watch-debug": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run serve-debug\""
