@@ -43,7 +43,6 @@ The full folder structure of this app is explained below:
 | **views**                | Views define how your app renders on the client. In this case we're using pug                 |
 | .env.example             | API keys, tokens, passwords, database URI. Clone this, but don't check it in to public repos. |
 | .travis.yml              | Used to configure Travis CI build                                                             |
-| .copyStaticAssets.ts     | Build script that copies images, fonts, and JS libs to the dist folder                        |
 | jest.config.js           | Used to configure Jest                                                                        |
 | package.json             | File that contains npm dependencies as well as [build scripts](#what-if-a-library-isnt-on-definitelytyped)                          |
 | tsconfig.json            | Config settings for compiling server code written in TypeScript                               |
@@ -114,4 +113,4 @@ Below is a list of all the scripts available:
 | `build-sass`              | Compiles all `.scss` files to `.css` files                                                        |
 | `watch-sass`              | Same as `build-sass` but continuously watches `.scss` files and re-compiles when needed             |
 | `tslint`                  | Runs TSLint on project files                                                                      |
-| `copy-static-assets`      | Calls script that copies JS libs, fonts, and images to dist directory                             |
+|

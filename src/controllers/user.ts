@@ -1,11 +1,12 @@
 import * as async from "async";
 import * as crypto from "crypto";
-import * as nodemailer from "nodemailer";
 import * as passport from "passport";
 import { default as User, AuthToken, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
-import { INode, Neo4jError } from "neo4js";
+import { INode, Neo4jError, Relationship } from "neo4js";
+import * as sgMail from "@sendgrid/mail";
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
  * POST /login
@@ -19,6 +20,10 @@ export let login = (req: Request, res: Response, next: NextFunction) => {
   const errors = req.validationErrors();
 
   if (errors) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("Error on login attempt:");
+      console.error(errors);
+    }
     return res.status(400).send(errors);
   }
 
@@ -53,10 +58,17 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   req.assert("confirmPassword", "Passwords do not match").equals(req.body.password);
   req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
 
+  // optional
+  req.assert("name", "Name must be a string").optional().isAlphanumeric();
+  req.assert("gender", "Gender must be a string").optional().isAlphanumeric();
+  req.assert("location", "Location must be a string").optional().isAlphanumeric();
+  req.assert("picture", "Picture must be a string").optional().isAlphanumeric();
+
   const errors = req.validationErrors();
 
   if (errors) {
-    return res.status(400).send(errors);
+    console.log(errors);
+    // return res.status(400).send(errors);
   }
 
   const user = new User({
@@ -64,8 +76,22 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
     password: req.body.password
   });
 
+  if (req.body.name) {
+    user.name = req.body.name;
+  }
+  if (req.body.gender) {
+    user.gender = req.body.gender;
+  }
+  if (req.body.location) {
+    user.location = req.body.location;
+  }
+  if (req.body.picture) {
+    user.picture = req.body.picture;
+  }
+
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { next(err); }
+    console.log(existingUser);
     if (existingUser) {
       return res.status(400).send("Account with that email address already exists.");
     }
@@ -81,6 +107,25 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
+/**
+ * GET /user/search/:name
+ * Find users that match name.
+ */
+export let searchUser = (req: Request, res: Response, next: NextFunction) => {
+  req.assert("search", "Email must be an email").optional().isEmail();
+  User.findLike({
+    name: `(?i).*${req.params.name}.*`,
+    email: `(?i).*${req.params.name}.*`
+  }, {}, (err, users) => {
+    if (err) { return next(err); }
+    users.forEach((user) => {
+      delete user.password;
+      delete user.label;
+    });
+    res.status(200).send(users);
+  }, -1, "OR");
+};
+
 export let getUser = (req: Request, res: Response) => {
   User.findOne({ email: req.params.email }, (err, user: UserType) => {
     if (err) {
@@ -89,7 +134,6 @@ export let getUser = (req: Request, res: Response) => {
       return res.status(404).send(`User with email ${req.params.email} not found.`);
     } else {
       delete user.password;
-      delete user._id;
       delete user.label;
       res.status(200).send(user);
     }
@@ -102,7 +146,7 @@ export let getUser = (req: Request, res: Response) => {
  */
 export let account = (req: Request, res: Response) => {
   delete req.user.password;
-  delete req.user._id;
+  delete req.user.label;
   res.status(200).send(req.user);
 };
 
@@ -137,7 +181,7 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
       if (err) {
         return res.status(400).send("The email address you have entered is already associated with an account.");
       }
-      res.status(200).send({message: "Profile information has been updated.", });
+      res.status(200).send("Profile information has been updated.");
     });
   });
 };
@@ -162,6 +206,69 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
     user.save((err: Neo4jError) => {
       if (err) { return next(err); }
       res.status(200).send("Password has been changed.");
+    });
+  });
+};
+
+/**
+ * POST /friend/request/:uid
+ * Send friend request to the user with the given id.
+ */
+export let getFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+  User.findById(req.params.uid, (err, notYourFriend: UserType) => {
+    if (err) { return next(err); }
+    if (!notYourFriend) { return res.status(404).send("User not found D:"); }
+    req.user.friendRequest(notYourFriend);
+    res.status(200).send("Friend request sent!");
+  });
+};
+
+/**
+ * GET /friend/requests
+ * See your friend requests.
+ */
+export let getFriendRequests = (req: Request, res: Response, next: NextFunction) => {
+  req.user.getRelated("friendRequest", User, "in", (err: Error, notYourFriends: Relationship[]) => {
+    if (err) { return next(err); }
+    notYourFriends.forEach((pair) => {
+      delete pair.node.password;
+      delete pair.node.label;
+    });
+    return res.status(200).send(notYourFriends.map((pair) => pair.node));
+  });
+};
+
+/**
+ * GET /profile/friends
+ * All user account.
+ */
+export let getFriends = (req: Request, res: Response, next: NextFunction) => {
+  req.user.getRelated("friendOf", User, "any", (err: Error, friends: Relationship[]) => {
+    if (err) { return next(err); }
+    friends.forEach((pair) => {
+      delete pair.node.password;
+      delete pair.node.label;
+    });
+    return res.status(200).send(friends.map((pair) => pair.node));
+  });
+};
+
+/**
+ * GET /friend/accept/:uid
+ * Accept a friend request.
+ */
+export let getAcceptFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+  User.findById(req.params.uid, (err, user: UserType) => {
+    if (err) { return next(err); }
+    if (!user) { return res.status(404).send(`User with id ${req.params.uid} not found.`); }
+    req.user.hasRelationWith("friendRequest", user, "in", (err: Error, hasFriendRequest: boolean) => {
+      if (err) { return next(err); }
+      if (!hasFriendRequest) { return res.status(401).send("No friend request found."); }
+      user.friendOf(req.user).then(() => {
+        res.status(200).send(`Congratulations! ${user.name || user.email} is now your friend.`);
+      }).catch((_) => {
+        res.status(500).send("Something went wrong, please try again later.");
+      });
     });
   });
 };
@@ -247,21 +354,14 @@ export let postReset = (req: Request, res: Response, next: NextFunction) => {
         });
     },
     function sendResetPasswordEmail(user: UserType, done: Function) {
-      const transporter = nodemailer.createTransport({
-        service: "SendGrid",
-        auth: {
-          user: process.env.SENDGRID_USER,
-          pass: process.env.SENDGRID_PASSWORD
-        }
-      });
-      const mailOptions = {
-        to: user.email.toString(),
+      const msg = {
+        to: user.emai.toString(),
         from: "service@cooper.com",
         subject: "Your password has been changed",
         text: `Hello,\n\nThis is a confirmation that the password for your account ${user.email} has just been changed.\n`
       };
-      transporter.sendMail(mailOptions, (err: Error) => {
-        res.status(200).send("Success! Your password has been changed.");
+      sgMail.send(msg, false, (err: Error) => {
+        res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
         done(err);
       });
     }
@@ -304,14 +404,7 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
       });
     },
     function sendForgotPasswordEmail(token: AuthToken, user: UserType, done: Function) {
-      const transporter = nodemailer.createTransport({
-        service: "SendGrid",
-        auth: {
-          user: process.env.SENDGRID_USER,
-          pass: process.env.SENDGRID_PASSWORD
-        }
-      });
-      const mailOptions = {
+      const msg = {
         to: user.email.toString(),
         from: "service@cooper.com",
         subject: "Reset your password on Cooper",
@@ -320,7 +413,7 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
           http://${req.headers.host}/reset/${token}\n\n
           If you did not request this, please ignore this email and your password will remain unchanged.\n`
       };
-      transporter.sendMail(mailOptions, (err: Error) => {
+      sgMail.send(msg, false, (err: Error) => {
         res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
         done(err);
       });
