@@ -7,10 +7,5 @@ export NVM_BIN=$HOME/.nvm/versions/node/v6.9.0/bin
 cd $1 && \
 tar zxvf package.tgz -C . && \
 mv dist/package.json . && \
-npm install;
-
-pm2 show cooper-production | grep online;
-if [ $? -eq 0 ] ; then
-  pm2 stop cooper-production
-fi
+npm install && \
 pm2 start dist/server.js -i max —-name="cooper-production"
