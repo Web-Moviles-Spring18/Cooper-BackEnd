@@ -39,3 +39,6 @@ coverage/**/*
 
 package-lock.json
 deploy
+
+# Ignore ssl certificate
+keys/**/*
