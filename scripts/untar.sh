@@ -8,4 +8,4 @@ cd /var/www/YOUR-DOMAIN.com && \
 tar zxvf package.tgz -C . && \
 mv build/package.json . && \
 npm install && \
-npm run start-production
+pm2 start dist/server.js -i max — name="cooper-production"

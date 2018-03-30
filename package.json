@@ -22,8 +22,6 @@
   },
   "homepage": "https://github.com/Web-Moviles-Spring18/Lab-Web#readme",
   "scripts": {
-    "start-production": "pm2 start dist/server.js -i max — name='cooper-production'",
-    "restart-production": "pm2 restart all",
     "start": "npm run serve",
     "build": "npm run tslint && npm run build-ts && npm run copy-static-assets",
     "serve": "node dist/server.js",
