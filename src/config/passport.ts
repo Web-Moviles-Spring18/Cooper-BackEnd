@@ -7,7 +7,7 @@ import * as _ from "lodash";
 // import { User, UserType } from '../models/User';
 import { default as User, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
-import { Neo4jError } from "neo4js";
+import { Neo4jError, INode } from "neo4js";
 
 const LocalStrategy = passportLocal.Strategy;
 const FacebookStrategy = passportFacebook.Strategy;
@@ -79,9 +79,9 @@ passport.use(new FacebookStrategy({
           if (err) { return done(err); }
           user.facebook = profile.id;
           user.tokens.push({ kind: "facebook", accessToken });
-          user.profile.name = user.profile.name || `${profile.name.givenName} ${profile.name.familyName}`;
-          user.profile.gender = user.profile.gender || profile._json.gender;
-          user.profile.picture = user.profile.picture || `https://graph.facebook.com/${profile.id}/picture?type=large`;
+          user.name = user.profile.name || `${profile.name.givenName} ${profile.name.familyName}`;
+          user.gender = user.profile.gender || profile._json.gender;
+          user.picture = user.profile.picture || `https://graph.facebook.com/${profile.id}/picture?type=large`;
           user.save((err: Error) => {
             done(err, user);
           });
@@ -103,10 +103,10 @@ passport.use(new FacebookStrategy({
           user.email = profile._json.email;
           user.facebook = profile.id;
           user.tokens.push({ kind: "facebook", accessToken });
-          user.profile.name = `${profile.name.givenName} ${profile.name.familyName}`;
-          user.profile.gender = profile._json.gender;
-          user.profile.picture = `https://graph.facebook.com/${profile.id}/picture?type=large`;
-          user.profile.location = (profile._json.location) ? profile._json.location.name : "";
+          user.name = `${profile.name.givenName} ${profile.name.familyName}`;
+          user.gender = profile._json.gender;
+          user.picture = `https://graph.facebook.com/${profile.id}/picture?type=large`;
+          user.location = (profile._json.location) ? profile._json.location.name : "";
           user.save((err: Error) => {
             done(err, user);
           });
@@ -123,7 +123,7 @@ export let isAuthenticated = (req: Request, res: Response, next: NextFunction) =
   if (req.isAuthenticated()) {
     return next();
   }
-  res.status(401).send("Not authenticateed.");
+  res.status(401).send("Not authenticated.");
 };
 
 /**

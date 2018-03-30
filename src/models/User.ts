@@ -15,18 +15,20 @@ export type UserType = INode & {
   email: string,
   password: string,
   passwordResetToken?: string,
-  passwordResetExpires?: Date,
+  passwordResetExpires?: Date, // TODO: Fix dates bug
   tokens?: AuthToken[],
   facebook?: string,
   twitter?: string,
   google?: string,
   name?: string,
   gender?: string,
-  location?: string,
+  location?: string, // TODO: make this a latLng object
   picture?: string,
-  owns: (pool: INode, props?: NeoProperties) => Promise<void>,
-  friendOf: (friend: INode, props?: NeoProperties) => Promise<void>,
+  owns: (pool: INode) => Promise<void>,
+  friendRequest: (user: INode) => Promise<void>,
+  friendOf: (friend: INode) => Promise<void>,
   participatesIn: (pool: INode, props?: NeoProperties) => Promise<void>,
+  invitedTo: (pool: INode) => Promise<void>;
   comparePassword: (candidatePassword: string, cb: (err: any, isMatch: any) => any) => void,
   gravatar: (size: number) => string
 };
@@ -40,7 +42,10 @@ const userSchema = new Schema({
     unique: true,
     index: true
   },
-  password: String,
+  password: {
+    type: String,
+    required: true
+  },
   passwordResetToken: String,
   passwordResetExpires: Date,
   tokens: Array,
@@ -101,8 +106,10 @@ userSchema.methods.gravatar = (size: number) => {
 
 const User = model("User", userSchema);
 
+userSchema.relate("friendRequest", User);
 userSchema.relate("friendOf", User);
 userSchema.relate("owns", Pool);
+userSchema.relate("invitedTo", Pool);
 userSchema.relate("participatesIn", Pool, {
   debt: {
     type: Number,

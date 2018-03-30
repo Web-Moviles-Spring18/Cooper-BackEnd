@@ -3,6 +3,8 @@ import { Schema, model } from "../lib/neo4js";
 import { INode } from "neo4js";
 import { UserType } from "./User";
 import * as crypto from "crypto";
+import * as sgMail from "@sendgrid/mail";
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 export type PoolType = INode & {
   name: string,
@@ -14,9 +16,11 @@ export type PoolType = INode & {
     lat: number,
     long: number
   },
+  total: number,
   starts?: Date,
   ends: Date,
-  picture?: string
+  picture?: string,
+  inviteUser: (from: UserType, user: UserType, cb: (err: Error, result: any) => void) => void
 };
 
 const poolSchema = new Schema({
@@ -25,7 +29,10 @@ const poolSchema = new Schema({
     required: true,
     index: true
   },
-  private: Boolean,
+  private: {
+    type: Boolean,
+    required: true
+  },
   invite: {
     type: String,
     required: true,
@@ -71,8 +78,19 @@ poolSchema.pre("save", function createInvite(next: Function) {
   });
 });
 
-poolSchema.methods.invite = (user: UserType) => {
-  // TODO: send email with invite link or a push notification with the invite link?
+poolSchema.methods.inviteUser = function(from: UserType, user: UserType, cb: (err: Error, result: any) => void) {
+  const pool: PoolType = this;
+  user.invitedTo(pool);
+  const displayName = from.name ? from.name : "Someone";
+  const msg = {
+    to: user.email,
+    subject: `${displayName} invited you to join the ${pool.name} pool!`,
+    from: "service@cooper.mx",
+    text: `Hello,\n\n${displayName} just invited you to join his pool. \n\n` +
+    `If you want to join, please click the following link:\n` +
+    `http://${process.env.HOST_URI}/join/${pool.invite}.`
+  };
+  sgMail.send(msg, false, cb);
 };
 
 const Pool = model("Pool", poolSchema);
