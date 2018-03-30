@@ -9,8 +9,8 @@ tar zxvf package.tgz -C . && \
 mv dist/package.json . && \
 npm install;
 
-pm2 show cooper-production | grep online;
+npm status-production | grep online;
 if [ $? -eq 0 ] ; then
-  pm2 stop cooper-production
+  npm run stop-production
 fi
-pm2 start dist/server.js -i max —-name="cooper-production"
+npm run start-production

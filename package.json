@@ -23,6 +23,9 @@
   "homepage": "https://github.com/Web-Moviles-Spring18/Lab-Web#readme",
   "scripts": {
     "start": "npm run serve",
+    "start-production": "pm2 start dist/server.js -i max",
+    "stop-production": "pm2 stop server",
+    "status-production": "pm2 show server",
     "build": "npm run tslint && npm run build-ts && npm run copy-static-assets",
     "serve": "node dist/server.js",
     "watch-node": "nodemon dist/server.js",
