@@ -22,6 +22,8 @@
   },
   "homepage": "https://github.com/Web-Moviles-Spring18/Lab-Web#readme",
   "scripts": {
+    "start-production": "pm2 start dist/server.js -i max — name='cooper-production'",
+    "restart-production": "pm2 restart all",
     "start": "npm run serve",
     "build": "npm run tslint && npm run build-ts && npm run copy-static-assets",
     "serve": "node dist/server.js",
@@ -60,7 +62,8 @@
     "nodemailer": "^4.4.1",
     "passport": "^0.4.0",
     "passport-facebook": "^2.1.1",
-    "passport-local": "^1.0.0"
+    "passport-local": "^1.0.0",
+    "pm2": "^2.10.2"
   },
   "devDependencies": {
     "@types/async": "^2.0.45",
