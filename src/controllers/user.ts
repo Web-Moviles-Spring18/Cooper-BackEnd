@@ -116,9 +116,13 @@ export let searchUser = (req: Request, res: Response, next: NextFunction) => {
   User.findLike({
     name: `(?i).*${req.params.name}.*`,
     email: `(?i).*${req.params.name}.*`
-  }, {}, (err, result) => {
+  }, {}, (err, users) => {
     if (err) { return next(err); }
-    res.status(200).send(result);
+    users.forEach((user) => {
+      delete user.password;
+      delete user.label;
+    });
+    res.status(200).send(users);
   }, -1, "OR");
 };
 
