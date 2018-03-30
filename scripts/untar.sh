@@ -8,5 +8,5 @@ cd $REMOTE_APP_DIR && \
 tar zxvf package.tgz -C . && \
 mv dist/package.json . && \
 npm install && \
-cp .env dist/.env && \
+cp .env dist && \
 pm2 start dist/server.js -i max — name="cooper-production"
