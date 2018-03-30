@@ -7,10 +7,6 @@ export NVM_BIN=$HOME/.nvm/versions/node/v6.9.0/bin
 cd $1 && \
 tar zxvf package.tgz -C . && \
 mv dist/package.json . && \
-npm install;
-
-npm status-production | grep online;
-if [ $? -eq 0 ] ; then
-  npm run stop-production
-fi
+npm install && \
+npm run stop-production && \
 npm run start-production
