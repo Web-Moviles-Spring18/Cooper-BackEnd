@@ -8,4 +8,5 @@ cd $1 && \
 tar zxvf package.tgz -C . && \
 mv dist/package.json . && \
 npm install && \
-pm2 start dist/server.js -i max —-name="cooper-production"
+pm2 stop server && \
+pm2 start dist/server.js -i max
