@@ -80,14 +80,15 @@ poolSchema.pre("save", function createInvite(next: Function) {
 
 poolSchema.methods.inviteUser = function(from: UserType, user: UserType, cb: (err: Error, result: any) => void) {
   const pool: PoolType = this;
+  user.invitedTo(pool);
   const displayName = from.name ? from.name : "Someone";
   const msg = {
     to: user.email,
-    subject: `${displayName} invited you to the ${pool.name} pool!`,
-    from: "service@cooper.com",
+    subject: `${displayName} invited you to join the ${pool.name} pool!`,
+    from: "service@cooper.mx",
     text: `Hello,\n\n${displayName} just invited you to join his pool. \n\n` +
     `If you want to join, please click the following link:\n` +
-    `http://${process.env.HOST_URI}/join/${pool.invite}`
+    `http://${process.env.HOST_URI}/join/${pool.invite}.`
   };
   sgMail.send(msg, false, cb);
 };

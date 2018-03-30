@@ -109,8 +109,8 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
- * GET /pool/search/:name
- * Find pools that match name.
+ * GET /user/search/:name
+ * Find users that match name.
  */
 export let searchUser = (req: Request, res: Response, next: NextFunction) => {
   req.assert("search", "Email must be an email").optional().isEmail();
@@ -207,12 +207,27 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
 };
 
 /**
- * POST /friend/
- * Send friend request.
+ * POST /friend/request/:uid
+ * Send friend request to the user with the given id.
  */
 export let postFriendRequest = (req: Request, res: Response, next: NextFunction) => {
-  // TODO: Define friend request flow.
+  User.findById(req.params.uid, (err, notYourFriend: UserType) => {
+    if (err) { return next(err); }
+    if (!notYourFriend) { return res.status(404).send("User not found D:"); }
+    notYourFriend.friendsRequest(req.user);
+    res.status(200).send("Friend request sent!");
+  });
 };
+
+export let getFriendRequests = (req: Request, res: Response, next: NextFunction) => {
+  req.user.getRelated("friendsRequest", User, (err: Error, notYourFriends: Relationship[]) => {
+    if (err) { return next(err); }
+    notYourFriends.forEach((pair) => {
+      delete pair.node.password;
+    });
+    return res.status(200).send(notYourFriends);
+  });
+}
 
 /**
  * GET /profile/friends

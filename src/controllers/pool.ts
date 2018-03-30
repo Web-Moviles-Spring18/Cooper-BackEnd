@@ -108,7 +108,7 @@ export let postUpdateUserPool = (req: Request, res: Response, next: NextFunction
  */
 export let postInvite = (req: Request, res: Response, next: NextFunction) => {
   if (req.user.email === req.body.email) {
-    return res.status(400).send("You cannot invite yourself");
+    return res.status(400).send("You cannot invite yourself.");
   }
   Pool.findById(req.params.id, (err, pool: PoolType) => {
     if (err) { return next(err); }
@@ -118,7 +118,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
     req.user.hasRelationWith("owns", pool, (err: Error, userOwnsPool: boolean) => {
       if (err) { return next(err); }
       if (!userOwnsPool) {
-        return res.status(401).send("You don't own this pool");
+        return res.status(401).send("You don't own this pool.");
       }
 
       req.assert("email", "Invalid email").isEmail();
@@ -188,6 +188,17 @@ export let searchPool = (req: Request, res: Response, next: NextFunction) => {
  */
 export let getMyPools = (req: Request, res: Response, next: NextFunction) => {
   req.user.getRelated("participatesIn", Pool, (err: Error, pools: Relationship[]) => {
+    if (err) { return next(err); }
+    return res.status(200).send(pools);
+  });
+};
+
+/**
+ * GET /profile/pools
+ * Get all pools that the logged in user participants in.
+ */
+export let getInvitedToPools = (req: Request, res: Response, next: NextFunction) => {
+  req.user.getRelated("invitedTo", Pool, (err: Error, pools: Relationship[]) => {
     if (err) { return next(err); }
     return res.status(200).send(pools);
   });
