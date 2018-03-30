@@ -24,9 +24,9 @@ export type UserType = INode & {
   gender?: string,
   location?: string, // TODO: make this a latLng object
   picture?: string,
-  owns: (pool: INode, props?: NeoProperties) => Promise<void>,
-  friendsRequest: (user: INode) => Promise<void>,
-  friendOf: (friend: INode, props?: NeoProperties) => Promise<void>,
+  owns: (pool: INode) => Promise<void>,
+  friendRequest: (user: INode) => Promise<void>,
+  friendOf: (friend: INode) => Promise<void>,
   participatesIn: (pool: INode, props?: NeoProperties) => Promise<void>,
   invitedTo: (pool: INode) => Promise<void>;
   comparePassword: (candidatePassword: string, cb: (err: any, isMatch: any) => any) => void,
@@ -106,7 +106,7 @@ userSchema.methods.gravatar = (size: number) => {
 
 const User = model("User", userSchema);
 
-userSchema.relate("friendsRequest", User);
+userSchema.relate("friendRequest", User);
 userSchema.relate("friendOf", User);
 userSchema.relate("owns", Pool);
 userSchema.relate("invitedTo", Pool);

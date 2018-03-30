@@ -183,8 +183,11 @@ export const model = (label: string, schema: Schema) => {
       });
     }
 
-    async getRelated(relName: String, otherModel: Model, next: (err: Neo4jError, res: Relationship[]) => void) {
-      const query = `MATCH (u:${label})-[r:${relName}]-(v) WHERE ID(u) = ${this._id} RETURN r, v`;
+    async getRelated(relName: String, otherModel: Model, direction: "any" | "in" | "out", next: (err: Neo4jError, res: Relationship[]) => void) {
+      const relStr = direction === "out" ? `-[r:${relName}]->` :
+                     direction === "in"  ? `<-[r:${relName}]-` :
+                                            `-[r:${relName}]-`;
+      const query = `MATCH (u:${label})${relStr}(v) WHERE ID(u) = ${this._id} RETURN r, v`;
       const pairs: Relationship[] = [];
       session.run(query).subscribe({
         onCompleted(sum: ResultSummary) {
@@ -227,10 +230,13 @@ export const model = (label: string, schema: Schema) => {
       });
     }
 
-    async hasRelationWith(name: String, other: NeoNode, next: (err: Neo4jError, res: boolean) => void) {
+    async hasRelationWith(name: String, other: NeoNode, direction: "any" | "in" | "out", next: (err: Neo4jError, res: boolean) => void) {
+      const relStr = direction === "out" ? `-[:${name}]->` :
+                     direction === "in"  ? `<-[:${name}]-` :
+                                            `-[:${name}]-`;
       const query = `MATCH (u:${label}), (v:${other.label}) ` +
                     `WHERE ID(u) = ${this._id} AND ID(v) = ${other._id} ` +
-                    `RETURN EXISTS((u)-[:${name}]-(v))`;
+                    `RETURN EXISTS((u)${relStr}(v))`;
 
       session.run(query).subscribe({
         onCompleted(summary: ResultSummary) { },

@@ -73,7 +73,7 @@ export let postUpdateUserPool = (req: Request, res: Response, next: NextFunction
       return res.status(404).send("Pool not found.");
     }
 
-    req.user.hasRelationWith("owns", pool, (err: Error, userOwnsPool: boolean) => {
+    req.user.hasRelationWith("owns", pool, "any", (err: Error, userOwnsPool: boolean) => {
       if (err) { return next(err); }
       if (!userOwnsPool) {
         return res.status(401).send("You don't own this pool");
@@ -82,7 +82,7 @@ export let postUpdateUserPool = (req: Request, res: Response, next: NextFunction
       req.assert("userEmail", "Invalid email").isEmail();
       req.sanitize("userEmail").normalizeEmail({ gmail_remove_dots: false });
 
-      pool.getRelated("participatesIn", User, (err, participants) => {
+      pool.getRelated("participatesIn", User, "in", (err, participants) => {
         let totalPaid = req.body.userInfo.debt || 0;
         participants.forEach((pair) => {
           if ((<any>pair.relation).paid && pair.node.email !== req.body.userEmail) {
@@ -115,7 +115,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
     if (!pool) {
       return res.status(404).send("Pool not found.");
     }
-    req.user.hasRelationWith("owns", pool, (err: Error, userOwnsPool: boolean) => {
+    req.user.hasRelationWith("owns", pool, "any", (err: Error, userOwnsPool: boolean) => {
       if (err) { return next(err); }
       if (!userOwnsPool) {
         return res.status(401).send("You don't own this pool.");
@@ -126,7 +126,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
       User.findOne({ email: req.body.email }, (err, user: UserType) => {
         if (err) { return next(err); }
         if (!user) {
-          return res.status(200).send("Invitation sent!");
+          return res.status(404).send("User not found D:");
         }
 
         pool.inviteUser(req.user, user, (err, result) => {
@@ -155,11 +155,12 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
       return res.status(404).send("Pool not found.");
     }
 
-    pool.getRelated("participatesIn", User, (err: Error, participants) => {
+    pool.getRelated("participatesIn", User, "in", (err: Error, participants) => {
       if (err) { return next(err); }
       let totalPaid = 0;
       participants.forEach((pair) => {
         delete pair.node.password;
+        delete pair.node.label;
         // FIXME: define relation type
         if ((<any>pair.relation).paid) {
           totalPaid += (<any>pair.relation).paid;
@@ -187,7 +188,7 @@ export let searchPool = (req: Request, res: Response, next: NextFunction) => {
  * Get all pools that the logged in user participants in.
  */
 export let getMyPools = (req: Request, res: Response, next: NextFunction) => {
-  req.user.getRelated("participatesIn", Pool, (err: Error, pools: Relationship[]) => {
+  req.user.getRelated("participatesIn", Pool, "out", (err: Error, pools: Relationship[]) => {
     if (err) { return next(err); }
     return res.status(200).send(pools);
   });
@@ -198,7 +199,7 @@ export let getMyPools = (req: Request, res: Response, next: NextFunction) => {
  * Get all pools that the logged in user participants in.
  */
 export let getInvitedToPools = (req: Request, res: Response, next: NextFunction) => {
-  req.user.getRelated("invitedTo", Pool, (err: Error, pools: Relationship[]) => {
+  req.user.getRelated("invitedTo", Pool, "out", (err: Error, pools: Relationship[]) => {
     if (err) { return next(err); }
     return res.status(200).send(pools);
   });
@@ -209,7 +210,7 @@ export let getInvitedToPools = (req: Request, res: Response, next: NextFunction)
  * Get all pools that the logged in user participants in.
  */
 export let getOwnPools = (req: Request, res: Response, next: NextFunction) => {
-  req.user.getRelated("owns", Pool, (err: Error, pools: Relationship[]) => {
+  req.user.getRelated("owns", Pool, "out", (err: Error, pools: Relationship[]) => {
     if (err) { return next(err); }
     return res.status(200).send(pools);
   });
@@ -226,7 +227,7 @@ export let getOwnPools = (req: Request, res: Response, next: NextFunction) => {
        return res.status(404).send("Pool not found.");
      }
 
-     pool.hasRelationWith("participatesIn", req.user, (err, exists) => {
+     pool.hasRelationWith("participatesIn", req.user, "in", (err, exists) => {
        if (!exists) {
          req.user.participatesIn(pool, { debt: 0, paid: 0 }).then(() => {
            res.status(200).send("Succesfully joined pool!");

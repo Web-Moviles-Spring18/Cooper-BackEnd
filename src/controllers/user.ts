@@ -93,7 +93,6 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
     if (err) { next(err); }
     console.log(existingUser);
     if (existingUser) {
-      console.log("caca");
       return res.status(400).send("Account with that email address already exists.");
     }
     user.save((err: Error) => {
@@ -143,6 +142,7 @@ export let getUser = (req: Request, res: Response) => {
  */
 export let account = (req: Request, res: Response) => {
   delete req.user.password;
+  delete req.user.label;
   res.status(200).send(req.user);
 };
 
@@ -210,36 +210,62 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
  * POST /friend/request/:uid
  * Send friend request to the user with the given id.
  */
-export let postFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+export let getFriendRequest = (req: Request, res: Response, next: NextFunction) => {
   User.findById(req.params.uid, (err, notYourFriend: UserType) => {
     if (err) { return next(err); }
     if (!notYourFriend) { return res.status(404).send("User not found D:"); }
-    notYourFriend.friendsRequest(req.user);
+    req.user.friendRequest(notYourFriend);
     res.status(200).send("Friend request sent!");
   });
 };
 
+/**
+ * GET /friend/requests
+ * See your friend requests.
+ */
 export let getFriendRequests = (req: Request, res: Response, next: NextFunction) => {
-  req.user.getRelated("friendsRequest", User, (err: Error, notYourFriends: Relationship[]) => {
+  req.user.getRelated("friendRequest", User, "in", (err: Error, notYourFriends: Relationship[]) => {
     if (err) { return next(err); }
     notYourFriends.forEach((pair) => {
       delete pair.node.password;
+      delete pair.node.label;
     });
-    return res.status(200).send(notYourFriends);
+    return res.status(200).send(notYourFriends.map((pair) => pair.node));
   });
-}
+};
 
 /**
  * GET /profile/friends
  * All user account.
  */
 export let getFriends = (req: Request, res: Response, next: NextFunction) => {
-  req.user.getRelated("friendOf", User, (err: Error, getFriends: Relationship[]) => {
+  req.user.getRelated("friendOf", User, "any", (err: Error, friends: Relationship[]) => {
     if (err) { return next(err); }
-    getFriends.forEach((pair) => {
+    friends.forEach((pair) => {
       delete pair.node.password;
+      delete pair.node.label;
     });
-    return res.status(200).send(getFriends);
+    return res.status(200).send(friends.map((pair) => pair.node));
+  });
+};
+
+/**
+ * GET /friend/accept/:uid
+ * Accept a friend request.
+ */
+export let getAcceptFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+  User.findById(req.params.uid, (err, user: UserType) => {
+    if (err) { return next(err); }
+    if (!user) { return res.status(404).send(`User with id ${req.params.uid} not found.`); }
+    req.user.hasRelationWith("friendRequest", user, "in", (err: Error, hasFriendRequest: boolean) => {
+      if (err) { return next(err); }
+      if (!hasFriendRequest) { return res.status(401).send("No friend request found."); }
+      user.friendOf(req.user).then(() => {
+        res.status(200).send(`Congratulations! ${user.name || user.email} is now your friend.`);
+      }).catch((_) => {
+        res.status(500).send("Something went wrong, please try again later.");
+      });
+    });
   });
 };
 
