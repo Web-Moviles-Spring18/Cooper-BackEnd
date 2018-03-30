@@ -51,6 +51,7 @@
     "dotenv": "^4.0.0",
     "errorhandler": "^1.5.0",
     "express": "^4.16.2",
+    "express-serve-static-core": "^0.1.1",
     "express-session": "^1.15.6",
     "express-validator": "^4.3.0",
     "fbgraph": "^1.4.1",
