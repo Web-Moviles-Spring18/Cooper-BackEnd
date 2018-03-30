@@ -8,4 +8,4 @@ cd /var/www/YOUR-DOMAIN.com && \
 tar zxvf package.tgz -C . && \
 mv build/package.json . && \
 npm install && \
-npm run start
+npm run start-production

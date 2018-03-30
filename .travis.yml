@@ -7,7 +7,7 @@ notifications:
     on_success: change
 addons:
   ssh_known_hosts:
-    - 167.99.98.101 # your droplet IP goes here
+    - 167.99.98.101 # droplet IP
 branches:
   only:
     - master
@@ -15,13 +15,13 @@ env:
   global:
     - REMOTE_APP_DIR=/var/www/cooper.mx/
     - REMOTE_USER=deploy
-    - REMOTE_HOST=167.99.98.101 # your droplet IP goes here
+    - REMOTE_HOST=167.99.98.101 # droplet IP
     - PORT=80
 before_install:
   - openssl aes-256-cbc -K $encrypted_7c1afc1ba21b_key -iv $encrypted_7c1afc1ba21b_iv -in deploy.enc -out deploy -d
   - npm install -g npm@^2
 install:
-  - npm install --only=dev
+  - npm install
 before_script:
   - chmod 600 deploy && mv deploy ~/.ssh/id_rsa
 script:
