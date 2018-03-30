@@ -38,3 +38,4 @@ dist/**/*
 coverage/**/*
 
 package-lock.json
+deploy
