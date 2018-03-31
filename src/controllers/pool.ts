@@ -175,6 +175,25 @@ export let getAcceptInvite = (req: Request, res: Response, next: NextFunction) =
 };
 
 /**
+ * GET /pool/decline/:id
+ * Decline Invitation to join a pool.
+ */
+export let getDeclineInvite = (req: Request, res: Response, next: NextFunction) => {
+  Pool.findById(req.params.id, (err, pool: PoolType) => {
+    if (err) { return next(err); }
+    if (!pool) { return res.status(404).send(`Pool with id ${req.params.id} not found.`); }
+    req.user.hasRelationWith("invitedTo", pool, "out", (err: Error, hasInivitation: boolean) => {
+      if (err) { return next(err); }
+      if (!hasInivitation) { return res.status(401).send("You are not invited to this pool."); }
+      pool.removeRelation("invitedTo", req.user, (err: Error) => {
+        if (err) { return next(err); }
+        res.status(200).send(`Invitation to ${pool.name} declined.`);
+      });
+    });
+  });
+};
+
+/**
  * GET /pool/:id
  * See pool detail.
  */
