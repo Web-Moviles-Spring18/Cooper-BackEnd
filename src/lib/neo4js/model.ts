@@ -114,28 +114,26 @@ export const model = (label: string, schema: Schema) => {
       }
     }
 
-    async updateRelationById(otherId: number, newProps: NeoProperties, next: NextFunction) {
+    async updateRelationById(otherId: number, label: string, newProps: NeoProperties, next: NextFunction) {
       // TODO: check with relationTypeDef
-      const query = `MATCH (n:${label})-[r]-(v) ` +
+      const query = `MATCH (n:${label})-[r:${label}]-(v) ` +
                   `WHERE ID(n) = ${this._id} AND ID(v) = ${otherId}` +
                   `SET r = ${toQueryProps(newProps)}`;
 
       session.run(query).subscribe({
         onCompleted(summary: ResultSummary) {
-          console.log(summary);
+          next();
         },
-        onNext(record: NeoRecord) {
-          console.log(record);
-        },
+        onNext(record: NeoRecord) { },
         onError(err: Neo4jError) {
           console.error(err);
+          next(err);
         }
       });
-      next();
     }
 
-    async updateRelation(match: NeoProperties, newProps: NeoProperties, next: NextFunction) {
-      const query = `MATCH (n:${label})-[r]-(v ${toQueryProps(match)}) ` +
+    async updateRelation(match: NeoProperties, label: string, newProps: NeoProperties, next: NextFunction) {
+      const query = `MATCH (n:${label})-[r:${label}]-(v ${toQueryProps(match)}) ` +
                   `WHERE ID(n) = ${this._id} ` +
                   `SET r = ${toQueryProps(newProps)}`;
 

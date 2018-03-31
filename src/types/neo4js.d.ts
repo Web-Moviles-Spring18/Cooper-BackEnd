@@ -12,13 +12,13 @@ interface INode {
   [key: string]: NeoType | Function | ISchema;
   _id?: number;
   save: (fn?: (err: Error) => void) => Promise<this>;
-  getRelated: (relName: String, otherModel: Model, direction: "any" | "in" | "out", next: (err: Neo4jError, node: Relationship[]) => void) => Promise<void>;
-  getRelationWith: (relName: String, otherModel: Model, otherId: number, direction: "any" | "in" | "out", next: (err: Neo4jError, res: Relationship) => void) => Promise<void>;
-  hasRelation: (name: String, match: NeoProperties, next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
-  removeRelation: (name: String, other: INode, next: Function) => Promise<void>;
-  hasRelationWith: (name: String, other: INode, direction: "any" | "in" | "out", next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
-  updateRelation: (match: NeoProperties, newProps: NeoProperties, next: NextFunction) => Promise<void>;
-  updateRelationById: (otherId: number, newProps: NeoProperties, next: NextFunction) => Promise<void>;
+  getRelated: (relName: string, otherModel: Model, direction: "any" | "in" | "out", next: (err: Neo4jError, node: Relationship[]) => void) => Promise<void>;
+  getRelationWith: (relName: string, otherModel: Model, otherId: number, direction: "any" | "in" | "out", next: (err: Neo4jError, res: Relationship) => void) => Promise<void>;
+  hasRelation: (name: string, match: NeoProperties, next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
+  removeRelation: (name: string, other: INode, next: Function) => Promise<void>;
+  hasRelationWith: (name: string, other: INode, direction: "any" | "in" | "out", next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
+  updateRelation: (match: NeoProperties, label: string, newProps: NeoProperties, next: NextFunction) => Promise<void>;
+  updateRelationById: (otherId: number, label: string, newProps: NeoProperties, next: NextFunction) => Promise<void>;
 }
 
 interface ISchema {
