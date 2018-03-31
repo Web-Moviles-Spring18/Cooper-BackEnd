@@ -232,7 +232,7 @@ export let searchPool = (req: Request, res: Response, next: NextFunction) => {
     if (err) { return next(err); }
     pools.forEach((pool) => {
       delete pool.invite;
-    })
+    });
     res.status(200).send(pools);
   });
 };
