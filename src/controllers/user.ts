@@ -121,6 +121,7 @@ export let searchUser = (req: Request, res: Response, next: NextFunction) => {
     users.forEach((user) => {
       delete user.password;
       delete user.label;
+      delete user.tokens;
     });
     res.status(200).send(users);
   }, -1, "OR");
@@ -135,6 +136,7 @@ export let getUser = (req: Request, res: Response) => {
     } else {
       delete user.password;
       delete user.label;
+      delete user.tokens;
       res.status(200).send(user);
     }
   });
@@ -147,6 +149,7 @@ export let getUser = (req: Request, res: Response) => {
 export let account = (req: Request, res: Response) => {
   delete req.user.password;
   delete req.user.label;
+  delete req.user.tokens;
   res.status(200).send(req.user);
 };
 
@@ -233,6 +236,7 @@ export let getFriendRequests = (req: Request, res: Response, next: NextFunction)
     notYourFriends.forEach((pair) => {
       delete pair.node.password;
       delete pair.node.label;
+      delete pair.node.tokens;
     });
     return res.status(200).send(notYourFriends.map((pair) => pair.node));
   });
@@ -248,6 +252,7 @@ export let getFriends = (req: Request, res: Response, next: NextFunction) => {
     friends.forEach((pair) => {
       delete pair.node.password;
       delete pair.node.label;
+      delete pair.node.tokens;
     });
     return res.status(200).send(friends.map((pair) => pair.node));
   });
@@ -265,6 +270,9 @@ export let getAcceptFriendRequest = (req: Request, res: Response, next: NextFunc
       if (err) { return next(err); }
       if (!hasFriendRequest) { return res.status(401).send("No friend request found."); }
       user.friendOf(req.user).then(() => {
+        user.removeRelation("friendRequest", req.user, (err: Error) => {
+          if (err) { next(err); }
+        });
         res.status(200).send(`Congratulations! ${user.name || user.email} is now your friend.`);
       }).catch((_) => {
         res.status(500).send("Something went wrong, please try again later.");
