@@ -120,7 +120,7 @@ export const model = (label: string, schema: Schema) => {
 
     async updateRelationById(otherId: number, label: string, newProps: NeoProperties, next: NextFunction) {
       // TODO: check with relationTypeDef
-      const query = `MATCH (n:${label})-[r:${label}]-(v) ` +
+      const query = `MATCH (n:${this.label})-[r:${label}]-(v) ` +
                   `WHERE ID(n) = ${this._id} AND ID(v) = ${otherId}` +
                   `SET r = ${toQueryProps(newProps)}`;
 
@@ -137,7 +137,8 @@ export const model = (label: string, schema: Schema) => {
     }
 
     async updateRelation(match: NeoProperties, label: string, newProps: NeoProperties, next: NextFunction) {
-      const query = `MATCH (n:${label})-[r:${label}]-(v ${toQueryProps(match)}) ` +
+      // TODO: check with relationTypeDef
+      const query = `MATCH (n:${this.label})-[r:${label}]-(v ${toQueryProps(match)}) ` +
                   `WHERE ID(n) = ${this._id} ` +
                   `SET r = ${toQueryProps(newProps)}`;
 

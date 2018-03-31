@@ -305,7 +305,7 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
         const newPaid = poolUser.paid + req.body.amount;
         pool.updateRelation({ email: req.user.email }, "participatesIn", {
           paid: newPaid,
-          debt: newDebt < 0 ? 0 : newDebt
+          debt: newDebt
         }, (err) => {
           if (err) {
             return next(err);
