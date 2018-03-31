@@ -19,7 +19,9 @@ export const model = (label: string, schema: Schema) => {
         schema.uniqueProps.forEach(prop => {
           session.run(`CREATE CONSTRAINT ON (n:${label}) ASSERT n.${prop} IS UNIQUE`).subscribe({
             onCompleted(summary: ResultSummary) {
-              console.log(`Succesfully created unique constraint for ${label}.${prop}`);
+              if (process.env.NODE_ENV === "develop") {
+                console.log(`Succesfully created unique constraint for ${label}.${prop}`);
+              }
             }
           });
         });
@@ -35,7 +37,9 @@ export const model = (label: string, schema: Schema) => {
     const queryParams = schema.indexes.join(",");
     session.run(`CREATE INDEX ON :${label}(${queryParams})`).subscribe({
       onCompleted(summary: ResultSummary) {
-        console.log(`Succesfully created index for label ${label}`);
+        if (process.env.NODE_ENV === "develop") {
+          console.log(`Succesfully created index for label ${label}`);
+        }
       }
     });
   }
@@ -139,16 +143,14 @@ export const model = (label: string, schema: Schema) => {
 
       session.run(query).subscribe({
         onCompleted(summary: ResultSummary) {
-          console.log(summary);
+          next();
         },
-        onNext(record: NeoRecord) {
-          console.log(record);
-        },
+        onNext(record: NeoRecord) { },
         onError(err: Neo4jError) {
           console.error(err);
+          next(err);
         }
       });
-      next();
     }
 
     // TODO: Pagination

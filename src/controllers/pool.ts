@@ -44,7 +44,7 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
       return next(err);
     }
     req.user.owns(pool).then(() => {
-      req.user.participatesIn(pool).then(() => {
+      req.user.participatesIn(pool, { debt: pool.total }).then(() => {
         res.status(200).send({
           message: "Pool created!",
           pool
@@ -98,7 +98,7 @@ export let postUpdateUserPool = (req: Request, res: Response, next: NextFunction
         if (totalPaid > pool.total) {
           return res.status(400).send(`Too much debt for user ${req.body.userEmail}`);
         }
-        pool.updateRelation({ email: req.body.userEmail }, {
+        pool.updateRelation({ email: req.body.userEmail }, "participatesIn", {
           debt: req.body.userInfo.debt, paid: req.body.userInfo.paid
         }, () => {
           res.status(200).send("User information updated.");
@@ -253,7 +253,7 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
 
 /**
  * POST /pool/:id/pay
- * Find pools that match name.
+ * Pay pool.
  */
 export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
   req.assert("amount", "Amount must be a number").isNumeric();
@@ -269,7 +269,7 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
       return next(err);
     }
     const pool = relation.node;
-    const debt = relation.relation;
+    const poolUser = relation.relation;
     if (!pool) {
       return res.status(404).send("Pool not found.");
     }
@@ -277,34 +277,52 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
       return res.status(400).send("You are not in this pool.");
     }
 
-
-  });
-
-  Pool.findById(req.params.id, (err, pool: PoolType) => {
-    if (err) {
-      return next(err);
-    }
-    if (!pool) {
-      return res.status(404).send("Pool not found.");
-    }
-
-    pool.getRelated("owns", User, "in", (err, relation) => {
+    pool.getRelated("owns", User, "in", (err, ownerRelation) => {
       if (err) {
         return next(err);
       }
 
-      const owner = relation[0].node;
+      const owner = ownerRelation[0].node;
       if (!owner) {
         // TODO: Delete this pool.
         return res.status(404).send(`This pool has no owner, ${pool.name} will be deleted`);
       }
 
+      const now = new Date();
+      if (pool.starts && now < pool.starts) {
+        return res.status(400).send("You cannot pay until the pool starts");
+      }
+      if (pool.ends > now) {
+        return res.status(400).send("You cannot pay after the pool is over");
+      }
+
       if (pool.paymentMethod === "cash") {
+        if (poolUser.debt <= 0) {
+          return res.status(202).send("You already paid");
+        }
         // TODO: Send Notification to owner to accept this.
-        res.status(501).send("Payment with cash not implemented.");
+        const newDebt = (<number>poolUser.debt) - req.body.amount;
+        const newPaid = poolUser.paid + req.body.amount;
+        pool.updateRelation({ email: req.user.email }, "participatesIn", {
+          paid: newPaid,
+          debt: newDebt < 0 ? 0 : newDebt
+        }, (err) => {
+          if (err) {
+            return next(err);
+          }
+          res.status(200).send({
+            message: `You paid ${req.body.amount} to a total of ${newPaid}.`,
+            debt: newDebt,
+            paid: newPaid
+          });
+        });
       } else {
         // TODO: Pay with credit card.
-        res.status(501).send("Payment with credit card not implemented.");
+        res.status(501).send({
+          message: "Payment with credit card not implemented.",
+          debt: poolUser.debt,
+          paid: poolUser.paid
+        });
       }
     });
   });

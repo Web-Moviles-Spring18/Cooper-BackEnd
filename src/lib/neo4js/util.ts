@@ -51,7 +51,9 @@ export const createProps = (record: NeoRecord): NeoProperties => {
   return props;
 };
 
-// Neo4j numeric values return in the form { low: number, high: number } for some reason
+// Neo4j numeric values return in the form { low: number, high: number } because
+// Neo4j number may be bigger than what js allows.
+// FIXME: Use the neo4j driver to convert numbers
 export const flatNumericProps = (props: { [key: string]: any }) => {
   for (const prop in props) {
     if (props[prop].hasOwnProperty("low")) {

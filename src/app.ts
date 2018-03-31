@@ -94,7 +94,7 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
 /**
  * Primary app routes.
  */
- app.get("/hello", (req, res) => res.status(200).send("Hello there!"));
+app.get("/hello", (req, res) => res.status(200).send("Hello there!"));
 app.post("/login", userController.login);
 app.get("/logout", userController.logout);
 app.post("/forgot", userController.forgot);
@@ -114,6 +114,7 @@ app.get("/user/search/:name", userController.searchUser);
  */
 app.post("/pool", auth.isAuthenticated, poolController.postPool);
 app.post("/pool/:id/invite", auth.isAuthenticated, poolController.postInvite);
+app.post("/pool/:id/pay", auth.isAuthenticated, poolController.postPayPool);
 app.post("/pool/:id", auth.isAuthenticated, poolController.postUpdateUserPool);
 app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 app.get("/pool/accept/:id", auth.isAuthenticated, poolController.getAcceptInvite);
