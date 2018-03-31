@@ -18,6 +18,7 @@ interface INode {
   removeRelation: (name: String, other: INode, next: Function) => Promise<void>;
   hasRelationWith: (name: String, other: INode, direction: "any" | "in" | "out", next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
   updateRelation: (match: NeoProperties, newProps: NeoProperties, next: NextFunction) => Promise<void>;
+  updateRelationById: (otherId: number, newProps: NeoProperties, next: NextFunction) => Promise<void>;
 }
 
 interface ISchema {

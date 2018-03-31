@@ -1,6 +1,6 @@
 import { session } from ".";
 import { Schema } from "./Schema";
-import { isSchemaTypeOpts, toQueryProps, createProps, checkType, flatNumericProps, isRegExp, toRegExQuery } from "./util";
+import { isSchemaTypeOpts, toQueryProps, createProps, checkType, flatNumericProps, isRegExp, toRegExQuery, isRelationTypeOpts } from "./util";
 import { NeoRecord, ResultSummary, SchemaTypeOpts, Neo4jError, NeoProperties, FindCallback, PropDef, NeoType, ISchema, INode, Model, Relationship } from "neo4js";
 import { NextFunction } from "express";
 
@@ -77,6 +77,18 @@ export const model = (label: string, schema: Schema) => {
 
           // TODO: Check that properties meet propDef.
           // TODO: Put default properties defined in propDef.
+          for (const propName in properties) {
+            const propDef = properties[propName];
+            props = props === undefined ? {} : props;
+            if (isRelationTypeOpts(propDef)) {
+              if (props[propName] === undefined) {
+                props[propName] = propDef.default;
+              }
+              props[propName] = checkType(propName, props[propName], propDef.type);
+            } else {
+              props[propName] = checkType(propName, props[propName], propDef);
+            }
+          }
           const query = `MATCH (a:${label}), (b:${other.label}) ` +
           `WHERE ID(a) = ${this._id} AND ID(b) = ${other._id} ` +
           `CREATE (a)-[r:${relationName} ${toQueryProps(props)}]->(b) ` +
@@ -102,6 +114,26 @@ export const model = (label: string, schema: Schema) => {
       } catch (e) {
         fn(e);
       }
+    }
+
+    async updateRelationById(otherId: number, newProps: NeoProperties, next: NextFunction) {
+      // TODO: check with relationTypeDef
+      const query = `MATCH (n:${label})-[r]-(v) ` +
+                  `WHERE ID(n) = ${this._id} AND ID(v) = ${otherId}` +
+                  `SET r = ${toQueryProps(newProps)}`;
+
+      session.run(query).subscribe({
+        onCompleted(summary: ResultSummary) {
+          console.log(summary);
+        },
+        onNext(record: NeoRecord) {
+          console.log(record);
+        },
+        onError(err: Neo4jError) {
+          console.error(err);
+        }
+      });
+      next();
     }
 
     async updateRelation(match: NeoProperties, newProps: NeoProperties, next: NextFunction) {

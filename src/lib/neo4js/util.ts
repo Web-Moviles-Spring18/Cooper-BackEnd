@@ -1,7 +1,11 @@
-import { SchemaTypeOpts, PropDef, NeoProperties, NeoRecord, NeoType } from "neo4js";
+import { SchemaTypeOpts, PropDef, NeoProperties, NeoRecord, NeoType, RelationTypeOpts, RelationPropDef } from "neo4js";
 
 export const isSchemaTypeOpts = (propDef: PropDef): propDef is SchemaTypeOpts => (
   (<SchemaTypeOpts>propDef).type !== undefined
+);
+
+export const isRelationTypeOpts = (propDef: RelationPropDef): propDef is RelationTypeOpts => (
+  (<RelationTypeOpts>propDef).type !== undefined
 );
 
 export const isRegExp = (prop: any): prop is RegExp => (
