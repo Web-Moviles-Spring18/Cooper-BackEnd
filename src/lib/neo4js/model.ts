@@ -183,6 +183,33 @@ export const model = (label: string, schema: Schema) => {
       });
     }
 
+    async getRelationWith(relName: String, otherModel: Model, otherId: number, direction: "any" | "in" | "out", next: (err: Neo4jError, res: Relationship) => void) {
+      const relStr = direction === "out" ? `-[r:${relName}]->` :
+                     direction === "in"  ? `<-[r:${relName}]-` :
+                                            `-[r:${relName}]-`;
+      const query = `MATCH (u:${label})${relStr}(v) ` +
+                    `WHERE ID(u) = ${this._id} AND ID(v) = ${otherId} ` +
+                    `RETURN r, v`;
+
+      session.run(query).subscribe({
+        onCompleted(sum: ResultSummary) { },
+
+        onNext(response: NeoRecord) {
+          const relation = response._fields[0].properties;
+          const nodeFields = response._fields[1];
+          nodeFields.properties._id = nodeFields.identity.low;
+          flatNumericProps(nodeFields.properties);
+          flatNumericProps(relation);
+          const node = new otherModel(nodeFields.properties);
+          next(undefined, { relation, node });
+        },
+
+        onError(err: Neo4jError) {
+          next(err, undefined);
+        }
+      });
+    }
+
     async getRelated(relName: String, otherModel: Model, direction: "any" | "in" | "out", next: (err: Neo4jError, res: Relationship[]) => void) {
       const relStr = direction === "out" ? `-[r:${relName}]->` :
                      direction === "in"  ? `<-[r:${relName}]-` :
