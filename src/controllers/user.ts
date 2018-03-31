@@ -282,6 +282,25 @@ export let getAcceptFriendRequest = (req: Request, res: Response, next: NextFunc
 };
 
 /**
+ * GET /friend/decline/:uid
+ * Decline a friend request.
+ */
+export let getDeclineFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+  User.findById(req.params.uid, (err, user: UserType) => {
+    if (err) { return next(err); }
+    if (!user) { return res.status(404).send(`User with id ${req.params.uid} not found.`); }
+    req.user.hasRelationWith("friendRequest", user, "in", (err: Error, hasFriendRequest: boolean) => {
+      if (err) { return next(err); }
+      if (!hasFriendRequest) { return res.status(401).send("No friend request found."); }
+      user.removeRelation("friendRequest", req.user, (err: Error) => {
+        if (err) { return next(err); }
+        res.status(200).send(`Friend request from ${user.name || user.email} declined.`);
+      });
+    });
+  });
+};
+
+/**
  * GET /account/delete
  * Delete user account.
  */

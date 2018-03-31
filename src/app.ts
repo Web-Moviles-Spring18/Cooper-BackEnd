@@ -117,6 +117,7 @@ app.post("/pool/:id/invite", auth.isAuthenticated, poolController.postInvite);
 app.post("/pool/:id", auth.isAuthenticated, poolController.postUpdateUserPool);
 app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 app.get("/pool/accept/:id", auth.isAuthenticated, poolController.getAcceptInvite);
+app.get("/pool/decline/:id", auth.isAuthenticated, poolController.getDeclineInvite);
 app.get("/pool/:id", auth.isAuthenticated, poolController.getPool);
 
 /**
@@ -133,7 +134,7 @@ app.get("/profile/friends/requests", auth.isAuthenticated, userController.getFri
  */
 app.get("/friend/request/:uid", auth.isAuthenticated, userController.getFriendRequest);
 app.get("/friend/accept/:uid", auth.isAuthenticated, userController.getAcceptFriendRequest);
-// TODO: decline friend request
+app.get("/friend/decline/:uid", auth.isAuthenticated, userController.getDeclineFriendRequest);
 // IDEA: public pools between friends, private pools only by invitation.
 
 // app.get("/contact", contactController.getContact);
