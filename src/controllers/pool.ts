@@ -129,15 +129,21 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
           return res.status(404).send("User not found D:");
         }
 
-        pool.inviteUser(req.user, user, (err, result) => {
-          if (err) {
-            console.error(err);
-            return next(err);
+        pool.hasRelationWith("invitedTo", user, "in", (err: Error, hasInvitation: boolean) => {
+          if (err) { return next(err); }
+          if (hasInvitation) {
+            return res.status(403).send(`${user.name || user.email} is already invited.`);
           }
-          if (process.env.NODE_ENV === "develop") {
-            console.log(result);
-          }
-          res.status(200).send("Invitation sent!");
+          pool.inviteUser(req.user, user, (err, result) => {
+            if (err) {
+              console.error(err);
+              return next(err);
+            }
+            if (process.env.NODE_ENV === "develop") {
+              console.log(result);
+            }
+            res.status(200).send("Invitation sent!");
+          });
         });
       });
     });
@@ -145,7 +151,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
- * GET /pool/:id
+ * GET /pool/accept/:id
  * Accept Invitation to join a pool.
  */
 export let getAcceptInvite = (req: Request, res: Response, next: NextFunction) => {
@@ -154,7 +160,7 @@ export let getAcceptInvite = (req: Request, res: Response, next: NextFunction) =
     if (!pool) { return res.status(404).send(`Pool with id ${req.params.id} not found.`); }
     req.user.hasRelationWith("invitedTo", pool, "out", (err: Error, hasInivitation: boolean) => {
       if (err) { return next(err); }
-      if (!hasInivitation) { return res.status(401).send("No friend request found."); }
+      if (!hasInivitation) { return res.status(401).send("Sorry, you are not invited to this pool."); }
       req.user.participatesIn(pool, { debt: 0, paid: 0 }).then(() => {
         pool.removeRelation("invitedTo", req.user, (err: Error) => {
           if (err) { next(err); }
