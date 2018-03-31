@@ -78,7 +78,7 @@ userSchema.pre("save", function hashPassword(next: Function) {
 
 userSchema.pre("findOne", function parseTokens(next: Function) {
   const user = this;
-  if (user.tokens) {
+  if (user && user.tokens) {
     user.tokens = JSON.parse(user.tokens || "{}");
   }
   next();

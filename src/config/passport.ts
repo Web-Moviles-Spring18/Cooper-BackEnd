@@ -2,7 +2,6 @@ import * as passport from "passport";
 import * as request from "request";
 import * as passportLocal from "passport-local";
 import * as passportFacebook from "passport-facebook";
-import * as _ from "lodash";
 import { default as User, UserType, AuthToken } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { Neo4jError, INode } from "neo4js";
