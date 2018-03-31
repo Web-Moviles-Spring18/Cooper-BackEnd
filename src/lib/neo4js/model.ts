@@ -358,13 +358,23 @@ export const model = (label: string, schema: Schema) => {
       };
 
       if (schema.preHooks.has("findOne")) {
-        schema.preHooks.get("findOne").call(this, () => { _findOne(match, next); });
+        _findOne(match, (err, node) => {
+          if (err) { return next(err, node); }
+          schema.preHooks.get("findOne").call(node, () => next(err, node));
+          if (schema.afterHooks.has("findOne")) {
+            schema.afterHooks.get("findOne").call(node, (err: Error) => {
+              if (err) { console.error(err); }
+            });
+          }
+        });
       } else {
-        _findOne(match, next);
-      }
-      if (schema.afterHooks.has("findOne")) {
-        schema.afterHooks.get("findOne").call(this, (err: Error) => {
-          if (err) { console.error(err); }
+        _findOne(match, (err, node) => {
+          next(err, node);
+          if (schema.afterHooks.has("findOne")) {
+            schema.afterHooks.get("findOne").call(node, (err: Error) => {
+              if (err) { console.error(err); }
+            });
+          }
         });
       }
     }

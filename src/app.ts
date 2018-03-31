@@ -52,6 +52,7 @@ app.use(cors(options));
 
 // Express configuration
 app.set("port", process.env.PORT || 3000);
+app.set("securePort", process.env.SECURE_PORT || 3443);
 app.use(compression());
 app.use(logger("dev"));
 app.use(bodyParser.json());
@@ -139,7 +140,7 @@ app.get("/friend/accept/:uid", auth.isAuthenticated, userController.getAcceptFri
 
 app.post("/account/profile", auth.isAuthenticated, userController.postUpdateProfile);
 app.post("/account/password", auth.isAuthenticated, userController.postUpdatePassword);
-app.post("/account/delete", auth.isAuthenticated, userController.postDeleteAccount);
+app.get("/account/delete", auth.isAuthenticated, userController.getDeleteAccount);
 app.get("/account/unlink/:provider", auth.isAuthenticated, userController.getOauthUnlink);
 
 // facebook login

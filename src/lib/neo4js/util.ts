@@ -9,11 +9,11 @@ export const isRegExp = (prop: any): prop is RegExp => (
 );
 
 export const checkType = (key: string, value: NeoType, propDef: PropDef): NeoType => {
-  if (propDef === Date && value.constructor === String) {
+  if (propDef === Date && value !== undefined && value.constructor === String) {
     console.log("return to date type");
     return new Date(<string>value);
   }
-  if (value.constructor !== propDef) {
+  if (value !== undefined && value.constructor !== propDef) {
     throw new Error("Type mismatch: "
       + `expected ${key} to be ${(<Function>propDef).name} `
       + `but received ${value.constructor.name}.`);

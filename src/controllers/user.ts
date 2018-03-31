@@ -274,10 +274,10 @@ export let getAcceptFriendRequest = (req: Request, res: Response, next: NextFunc
 };
 
 /**
- * POST /account/delete
+ * GET /account/delete
  * Delete user account.
  */
-export let postDeleteAccount = (req: Request, res: Response, next: NextFunction) => {
+export let getDeleteAccount = (req: Request, res: Response, next: NextFunction) => {
   User.remove({ email: req.user.email }, (err: Neo4jError) => {
     if (err) { return next(err); }
     req.logout();

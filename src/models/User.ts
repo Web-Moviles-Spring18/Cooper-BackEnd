@@ -48,7 +48,7 @@ const userSchema = new Schema({
   },
   passwordResetToken: String,
   passwordResetExpires: Date,
-  tokens: Array,
+  tokens: String,
   facebook: String,
   twitter: String,
   google: String,
