@@ -136,6 +136,7 @@ app.get("/friend/request/:uid", auth.isAuthenticated, userController.getFriendRe
 app.get("/friend/accept/:uid", auth.isAuthenticated, userController.getAcceptFriendRequest);
 app.get("/friend/decline/:uid", auth.isAuthenticated, userController.getDeclineFriendRequest);
 // IDEA: public pools between friends, private pools only by invitation.
+// IDEA: Find friends with facebook.
 
 // app.get("/contact", contactController.getContact);
 // app.post("/contact", contactController.postContact);

@@ -13,6 +13,7 @@ interface INode {
   _id?: number;
   save: (fn?: (err: Error) => void) => Promise<this>;
   getRelated: (relName: String, otherModel: Model, direction: "any" | "in" | "out", next: (err: Neo4jError, node: Relationship[]) => void) => Promise<void>;
+  getRelationWith: (relName: String, otherModel: Model, otherId: number, direction: "any" | "in" | "out", next: (err: Neo4jError, res: Relationship) => void) => Promise<void>;
   hasRelation: (name: String, match: NeoProperties, next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
   removeRelation: (name: String, other: INode, next: Function) => Promise<void>;
   hasRelationWith: (name: String, other: INode, direction: "any" | "in" | "out", next: (err: Neo4jError, res: boolean) => void) => Promise<void>;

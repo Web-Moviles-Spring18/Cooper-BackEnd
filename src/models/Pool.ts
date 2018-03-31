@@ -78,6 +78,9 @@ poolSchema.pre("save", function createInvite(next: Function) {
   });
 });
 
+// TODO: Implement Stripe.
+// TODO: Define split methods.
+// TODO: Update debts when new user joins.
 poolSchema.methods.inviteUser = function(from: UserType, user: UserType, cb: (err: Error, result: any) => void) {
   const pool: PoolType = this;
   user.invitedTo(pool);
