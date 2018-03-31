@@ -75,8 +75,6 @@ export const model = (label: string, schema: Schema) => {
             throw new Error(`Wrong node type: ${(<NeoNode>other).label} in relation ${relationName}.`);
           }
 
-          // TODO: Check that properties meet propDef.
-          // TODO: Put default properties defined in propDef.
           for (const propName in properties) {
             const propDef = properties[propName];
             props = props === undefined ? {} : props;
