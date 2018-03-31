@@ -90,7 +90,8 @@ poolSchema.methods.inviteUser = function(from: UserType, user: UserType, cb: (er
     `If you want to join, please click the following link:\n` +
     `http://${process.env.HOST_URI}/join/${pool.invite}.`
   };
-  sgMail.send(msg, false, cb);
+  // sgMail.send(msg, false, cb);
+  cb(undefined, undefined);
 };
 
 const Pool = model("Pool", poolSchema);
