@@ -329,6 +329,72 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
+ * GET /pool/:id/users/debt
+ * Find users with debt.
+ */
+export let getUsersWithDebt = (req: Request, res: Response, next: NextFunction) => {
+  Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
+    if (err) {
+      return next(err);
+    }
+    pool.hasRelationWith("participatesIn", req.user, "in", (err: Error, exists: boolean) => {
+      if (err) {
+        return next(err);
+      }
+      if (!exists) {
+        return res.status(403).send("You don't have access to this pool.");
+      }
+      pool.getRelated("participatesIn", User, "in", (err, pairs) => {
+        if (err) {
+          return next(err);
+        }
+        const users = pairs.filter(pair => pair.relation.debt > 0);
+        users.forEach(pair => {
+          delete pair.node.label;
+          delete pair.node.password;
+          delete pair.node.tokens;
+        });
+
+        res.status(200).send(users);
+      });
+    });
+  });
+}
+
+/**
+ * GET /pool/:id/users/overpaid
+ * Find users who overpaid.
+ */
+export let getUsersOverpaid = (req: Request, res: Response, next: NextFunction) => {
+  Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
+    if (err) {
+      return next(err);
+    }
+    pool.hasRelationWith("participatesIn", req.user, "in", (err: Error, exists: boolean) => {
+      if (err) {
+        return next(err);
+      }
+      if (!exists) {
+        return res.status(403).send("You don't have access to this pool.");
+      }
+      pool.getRelated("participatesIn", User, "in", (err, pairs) => {
+        if (err) {
+          return next(err);
+        }
+        const users = pairs.filter(pair => pair.relation.debt < 0);
+        users.forEach(pair => {
+          delete pair.node.label;
+          delete pair.node.password;
+          delete pair.node.tokens;
+        });
+
+        res.status(200).send(users);
+      });
+    });
+  });
+}
+
+/**
  * GET /pool/search/:name
  * Find pools that match name.
  */
