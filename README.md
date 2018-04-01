@@ -1,5 +1,8 @@
 # Cooper API
 
+### Documentation
+[Postman documentation](https://documenter.getpostman.com/collection/view/58139-e63db59b-385e-92e0-78e7-f6b8240b8a91)
+
 ### Installation
 Run `npm install`.
 
