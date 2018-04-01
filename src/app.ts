@@ -120,6 +120,8 @@ app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 app.get("/pool/accept/:id", auth.isAuthenticated, poolController.getAcceptInvite);
 app.get("/pool/decline/:id", auth.isAuthenticated, poolController.getDeclineInvite);
 app.get("/pool/:id", auth.isAuthenticated, poolController.getPool);
+app.get("/pool/:id/users/debt", auth.isAuthenticated, poolController.getUsersWithDebt);
+app.get("/pool/:id/users/overpaid", auth.isAuthenticated, poolController.getUsersOverpaid);
 
 /**
  * Profile routes.
