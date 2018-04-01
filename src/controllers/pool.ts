@@ -88,19 +88,27 @@ export let postUpdateUserPool = (req: Request, res: Response, next: NextFunction
       req.assert("userEmail", "Invalid email").isEmail();
       req.sanitize("userEmail").normalizeEmail({ gmail_remove_dots: false });
 
+      // FIXME: Update amounts only if they are not bigger than total.
       pool.getRelated("participatesIn", User, "in", (err, participants) => {
-        let totalPaid = req.body.userInfo.debt || 0;
+        let totalPaid = 0;
         participants.forEach((pair) => {
           if ((<any>pair.relation).paid && pair.node.email !== req.body.userEmail) {
             totalPaid += (<any>pair.relation).paid;
           }
         });
-        if (totalPaid > pool.total) {
+        const updatedRel: any = {};
+        if (req.body.userInfo.debt && totalPaid + req.body.userInfo.debt > pool.total) {
           return res.status(400).send(`Too much debt for user ${req.body.userEmail}`);
+        } else {
+          updatedRel.debt = req.body.userInfo.debt;
         }
-        pool.updateRelation({ email: req.body.userEmail }, "participatesIn", {
-          debt: req.body.userInfo.debt, paid: req.body.userInfo.paid
-        }, () => {
+        if (req.body.userInfo.paid && totalPaid + req.body.userInfo.paid > pool.total) {
+          return res.status(400).send(`Too much amount paid for user ${req.body.userEmail}`);
+        } else {
+          updatedRel.paid = req.body.userInfo.paid;
+        }
+
+        pool.updateRelation({ email: req.body.userEmail }, "participatesIn", updatedRel, () => {
           res.status(200).send("User information updated.");
         });
       });
