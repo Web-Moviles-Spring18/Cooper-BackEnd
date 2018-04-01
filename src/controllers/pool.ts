@@ -367,7 +367,7 @@ export let getUsersWithDebt = (req: Request, res: Response, next: NextFunction) 
       });
     });
   });
-}
+};
 
 /**
  * GET /pool/:id/users/overpaid
@@ -400,7 +400,7 @@ export let getUsersOverpaid = (req: Request, res: Response, next: NextFunction) 
       });
     });
   });
-}
+};
 
 /**
  * GET /pool/search/:name
