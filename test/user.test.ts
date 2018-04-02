@@ -2,7 +2,24 @@ import * as request from "supertest";
 import * as app from "../src/app";
 
 import * as chai from "chai";
-let expect = chai.expect;
+const expect = chai.expect;
+const assert = chai.assert;
+
+/*describe("GET /account", () => {
+  it("should return a json with an account", (done) =>{
+    return request(app).get("/account")
+
+  });
+});*/
+
+const userCredentials = {
+  email: "dan@itesm.mx ",
+  password: "contraseña"
+};
+
+const authenticatedUser = request.agent(app);
+
+
 
 describe("POST /login", () => {
   it("should return some defined error message with valid parameters", (done) => {
