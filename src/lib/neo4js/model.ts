@@ -379,6 +379,17 @@ export const model = (label: string, schema: Schema) => {
       }
     }
 
+    async removeRelation(name: string, other: NeoNode, next: Function) {
+      const query = `MATCH (u:${label})-[r:${name}]-(v:${other.label}) ` +
+                    `WHERE ID(u) = ${this._id} AND ID(v) = ${other._id} ` +
+                    `DELETE r`;
+      session.run(query).subscribe({
+        onCompleted() { next(); },
+        onNext() { },
+        onError: next
+      });
+    }
+
     static async remove(match: NeoProperties, next: Function) {
       const matchString = toQueryProps(match);
       if (matchString === "{}") {
