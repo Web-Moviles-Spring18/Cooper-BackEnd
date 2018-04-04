@@ -326,19 +326,25 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
           });
         });
       } else {
-        const charge = {
+        const charge: any = {
           amount: <number>req.body.amount,
           currency: <"mxn" | "usd">pool.currency,
           description: `Payment from ${req.user.name || req.user.email} for pool ${pool.name}`,
-          source: <string>req.body.source
         };
-        processPayment(req.user, charge).then((paymentStatus: string) => {
-          res.status(501).send({
+        if (req.body.source) {
+          charge.source = req.body.source;
+        }
+        processPayment(req.user, charge).then(payment => {
+          res.status(200).send({
             message: "Payment with credit card not implemented.",
             debt: poolUser.debt,
-            paid: poolUser.paid
+            paid: poolUser.paid,
+            ...payment
           });
         }).catch((err: Error) => {
+          if (err.message === "No payment method specified.") {
+            return res.status(400).send(err.message);
+          }
           next(err);
         });
       }
