@@ -6,6 +6,8 @@ import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { INode, Neo4jError, Relationship } from "neo4js";
 import * as sgMail from "@sendgrid/mail";
+import * as Stripe from "stripe";
+const stripe = new Stripe(process.env.STRIPE_KEY);
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
@@ -111,6 +113,83 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
       });
     });
   });
+};
+
+/**
+ * POST /user/update_payment
+ * Create a new stripe customer and payment source
+ * or update this user's defualt payment source.
+ */
+export let postUpdatePayment = (req: Request, res: Response, next: NextFunction) => {
+  req.assert("token", "Stripe token string is required.").isAscii();
+
+  const errors = req.validationErrors();
+  if (errors) {
+    return res.status(400).send(errors);
+  }
+
+  if (!req.user.customer) {
+    stripe.customers.create({
+      email: req.user.email,
+      source: req.body.token
+    }, function(err: any, customer: Stripe.customers.ICustomer) {
+      if (err) {
+        return next(err);
+      }
+
+      req.user.customer = customer.id;
+      req.user.save((err: Error) => {
+        if (err) {
+          return next(err);
+        }
+        res.status(201).send({
+          message: "Payment information added!",
+          ...customer
+        });
+      });
+    });
+  } else {
+    stripe.customers.update(req.user.customer, {
+      default_source: req.body.token
+    }, function(err: any, customer: Stripe.customers.ICustomer) {
+      if (err) {
+        next(err);
+      }
+      res.status(201).send({
+        message: "Payment information added!",
+        ...customer
+      });
+    });
+  }
+};
+
+/**
+ * DELETE /user/update_payment
+ * Create a new stripe customer and payment source
+ * or update this user's defualt payment source.
+ */
+export let deletePayment = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user.customer) {
+    delete req.user.customer;
+    req.user.save((err: Neo4jError) => {
+      if (err) {
+        next(err);
+      }
+      res.status(200).send("Profile information has been updated.");
+    });
+  } else {
+    stripe.customers.update(req.user.customer, {
+      default_source: req.body.token
+    }, function(err: any, customer: Stripe.customers.ICustomer) {
+      if (err) {
+        next(err);
+      }
+      res.status(201).send({
+        message: "Payment information updated!",
+        ...customer
+      });
+    });
+  }
 };
 
 /**

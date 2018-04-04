@@ -1,8 +1,9 @@
 import { default as Pool, PoolType } from "../models/Pool";
 import { default as User, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
-import { INode, Relationship } from "neo4js";
 import * as request from "express-validator";
+import { INode, Relationship } from "neo4js";
+import { processPayment } from "../lib/payment";
 
 /**
  * POST /pool
@@ -325,11 +326,20 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
           });
         });
       } else {
-        // TODO: Pay with credit card.
-        res.status(501).send({
-          message: "Payment with credit card not implemented.",
-          debt: poolUser.debt,
-          paid: poolUser.paid
+        const charge = {
+          amount: <number>req.body.amount,
+          currency: <"mxn" | "usd">pool.currency,
+          description: `Payment from ${req.user.name || req.user.email} for pool ${pool.name}`,
+          source: <string>req.body.source
+        };
+        processPayment(req.user, charge).then((paymentStatus: string) => {
+          res.status(501).send({
+            message: "Payment with credit card not implemented.",
+            debt: poolUser.debt,
+            paid: poolUser.paid
+          });
+        }).catch((err: Error) => {
+          next(err);
         });
       }
     });

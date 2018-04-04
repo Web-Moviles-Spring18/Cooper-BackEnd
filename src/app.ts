@@ -101,7 +101,6 @@ app.post("/forgot", userController.forgot);
 app.get("/reset/:token", userController.getReset);
 app.post("/reset/:token", userController.postReset);
 app.post("/signup", userController.signup);
-app.get("/account", auth.isAuthenticated, userController.account);
 
 /**
  * User routes.
@@ -144,6 +143,13 @@ app.get("/friend/decline/:uid", auth.isAuthenticated, userController.getDeclineF
 // app.get("/contact", contactController.getContact);
 // app.post("/contact", contactController.postContact);
 
+
+/**
+ * Account routes.
+ */
+app.get("/account", auth.isAuthenticated, userController.account);
+app.post("/account/update_payment", auth.isAuthenticated, userController.postUpdatePayment);
+app.delete("/account/payment", auth.isAuthenticated, userController.deletePayment);
 app.post("/account/profile", auth.isAuthenticated, userController.postUpdateProfile);
 app.post("/account/password", auth.isAuthenticated, userController.postUpdatePassword);
 app.get("/account/delete", auth.isAuthenticated, userController.getDeleteAccount);
