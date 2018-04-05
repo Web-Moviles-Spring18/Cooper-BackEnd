@@ -1,26 +1,46 @@
 import * as request from "supertest";
 import * as app from "../src/app";
-
 import * as chai from "chai";
+import * as mocha from "mocha";
+
 const expect = chai.expect;
 const assert = chai.assert;
 
-/*describe("GET /account", () => {
-  it("should return a json with an account", (done) =>{
-    return request(app).get("/account")
-
-  });
-});*/
+const newUserCredentials = {
+  email: "sergio.profe@gmail.com",
+  password: "contraseña",
+  confirmPassword: "contraseña"
+};
 
 const userCredentials = {
-  email: "dan@itesm.mx ",
+  email: "hermes.espinola@gmail.com",
   password: "contraseña"
 };
 
 const authenticatedUser = request.agent(app);
+beforeAll((done) => {
+  authenticatedUser
+    .post("/login")
+    .send({ email: "hermes.espinola@gmail.com", password: "contraseña" })
+    .end(function (err, res) {
+      console.log(res.status);
+      done();
+    });
+});
 
+describe("POST /signup", () => {
+  it("should be able to sign-up", (done) => {
+    return request(app).post("/signup")
+    .send(newUserCredentials)
+    .end(function(err, res) {
+      // console.log(res.error);
+      expect(res.status).to.equal(201);
+      done();
+    });
+  });
+});
 
-
+// Test de Login con datos incorrectos
 describe("POST /login", () => {
   it("should return some defined error message with valid parameters", (done) => {
     return request(app).post("/login")
@@ -29,7 +49,33 @@ describe("POST /login", () => {
       .expect(400)
       .end(function(err, res) {
         expect(res.error).not.to.be.undefined;
+        // console.log(res.error);
         done();
       });
+  });
+});
+
+// Login con datos correctos
+describe("POST /login", () => {
+  it("Should return 200", (done) => {
+    return request(app).post("/login")
+      .send(userCredentials)
+      .expect(200)
+      .end(function(err, res) {
+        expect(res.status).to.equal(200);
+        // console.log(res.status);
+        done();
+      });
+  });
+});
+
+describe("GET /account", () => {
+  it("should return a 200 response if the user is logged in", function(done) {
+    authenticatedUser.get("/account")
+    .expect(200, done);
+  });
+  it("should return a 401 response Unauthorized", function(done) {
+    request(app).get("/account")
+    .expect(401, done);
   });
 });
