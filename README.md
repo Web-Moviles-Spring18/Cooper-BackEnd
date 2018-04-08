@@ -113,4 +113,3 @@ Below is a list of all the scripts available:
 | `build-sass`              | Compiles all `.scss` files to `.css` files                                                        |
 | `watch-sass`              | Same as `build-sass` but continuously watches `.scss` files and re-compiles when needed             |
 | `tslint`                  | Runs TSLint on project files                                                                      |
-|
