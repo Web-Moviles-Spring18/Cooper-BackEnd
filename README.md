@@ -9,7 +9,7 @@ It has been tested only with the docker version of neo4j downloaded from the [Ki
 > **Important:** Make sure that the variables in the `.env` file are properly set,
 because the docker version of neo4j doesn't use the default ports.
 
-Same for (redis)[https://redis.io/topics/quickstart]. Or just download the docker image from Kitematic.
+Same for [redis](https://redis.io/topics/quickstart). Or just download the docker image from Kitematic.
 
 Copy `.env.example` to `.env` and change the settings as needed.
 
