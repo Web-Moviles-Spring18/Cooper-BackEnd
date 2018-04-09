@@ -231,6 +231,21 @@ export let getDeclineInvite = (req: Request, res: Response, next: NextFunction) 
 };
 
 /**
+ * GET /profile/pools/invites
+ * See pool invitations.
+ */
+export let getPoolInvites = (req: Request, res: Response, next: NextFunction) => {
+  req.user.getRelated("invitedTo", Pool, "out", (err: Error, invites: Relationship[]) => {
+    if (err) { return next(err); }
+    invites.forEach((pair) => {
+      delete pair.node.invite;
+      delete pair.node.label;
+    });
+    return res.status(200).send(invites.map((pair) => pair.node));
+  });
+};
+
+/**
  * GET /pool/:id
  * See pool detail.
  */
