@@ -125,6 +125,11 @@ export const model = (label: string, schema: Schema) => {
 
       session.run(query).subscribe({
         onCompleted(summary: ResultSummary) {
+          if (summary.updateStatistics._stats.propertiesSet == 0) {
+            next(undefined, false);
+          } else {
+            next(undefined, true);
+          }
         },
         onNext(record: NeoRecord) { },
         onError(err: Neo4jError) {
@@ -142,6 +147,11 @@ export const model = (label: string, schema: Schema) => {
 
       session.run(query).subscribe({
         onCompleted(summary: ResultSummary) {
+          if (summary.updateStatistics._stats.propertiesSet == 0) {
+            next(undefined, false);
+          } else {
+            next(undefined, true);
+          }
         },
         onNext(record: NeoRecord) { },
         onError(err: Neo4jError) {
