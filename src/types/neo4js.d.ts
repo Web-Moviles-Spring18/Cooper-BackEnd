@@ -17,8 +17,8 @@ interface INode {
   hasRelation: (name: string, match: NeoProperties, next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
   removeRelation: (name: string, other: INode, next: Function) => Promise<void>;
   hasRelationWith: (name: string, other: INode, direction: "any" | "in" | "out", next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
-  updateRelation: (match: NeoProperties, label: string, newProps: NeoProperties, next: NextFunction) => Promise<void>;
-  updateRelationById: (otherId: number, label: string, newProps: NeoProperties, next: NextFunction) => Promise<void>;
+  updateRelation: (match: NeoProperties, label: string, newProps: NeoProperties, next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
+  updateRelationById: (otherId: number, label: string, newProps: NeoProperties, next: (err: Neo4jError, res: boolean) => void) => Promise<void>;
 }
 
 interface ISchema {
@@ -99,4 +99,19 @@ type ResultSummary = {
   statement: { text: string, paramenters: NeoProperties };
   statementType: "r" | "w" | "rw";
   counters: any;
+  updateStatistics: {
+    _stats: {
+      nodesCreated: number,
+      nodesDeleted: number,
+      relationshipsCreated: number,
+      relationshipsDeleted: number,
+      propertiesSet: number,
+      labelsAdded: number,
+      labelsRemoved: number,
+      indexesAdded: number,
+      indexesRemoved: number,
+      constraintsAdded: number,
+      constraintsRemoved: number
+    }
+  }
 };

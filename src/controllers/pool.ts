@@ -16,6 +16,7 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
   req.assert("location", "Location must be a LatLnog").optional().isLatLong();
   req.assert("ends", "Ends must be a date").optional().toDate();
   req.assert("starts", "Starts must be a date").optional().toDate();
+  req.assert("total", "Total must be a number").isFloat();
   req.assert("currency", "Currency must be one of usd or mxn").isIn(["usd", "mxn"]);
 
   const errors = req.validationErrors();
@@ -46,6 +47,7 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
     }
     req.user.owns(pool).then(() => {
       req.user.participatesIn(pool, { debt: pool.total }).then(() => {
+        delete pool.label;
         res.status(200).send({
           message: "Pool created!",
           pool
@@ -109,7 +111,9 @@ export let postUpdateUserPool = (req: Request, res: Response, next: NextFunction
           updatedRel.paid = req.body.userInfo.paid;
         }
 
-        pool.updateRelation({ email: req.body.userEmail }, "participatesIn", updatedRel, () => {
+        pool.updateRelation({ email: req.body.userEmail }, "participatesIn", updatedRel, (err, success) => {
+          if (err) { return next(err); }
+          if (!success) { return res.status(404).send(`User ${req.body.userEmail} not in pool.`); }
           res.status(200).send("User information updated.");
         });
       });
@@ -235,7 +239,7 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
     if (err) {
       return next(err);
     }
-    if (!pool) {
+    if (!pool || pool.private) {
       return res.status(404).send("Pool not found.");
     }
 
@@ -255,6 +259,7 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
       });
       pool.totalPaid = totalPaid;
       delete pool.invite;
+      delete pool.label;
       return res.status(200).send({ pool, participants });
     });
   });
@@ -423,12 +428,15 @@ export let getUsersOverpaid = (req: Request, res: Response, next: NextFunction) 
  * Find pools that match name.
  */
 export let searchPool = (req: Request, res: Response, next: NextFunction) => {
-  Pool.findLike({ name: `(?i).*${req.params.name}.*` }, {}, (err, pools) => {
+  Pool.findLike({ name: `(?i).*${req.params.name}.*` }, { private: false }, (err, pools) => {
     if (err) {
       return next(err);
     }
+    if (!pools) { return res.status(404).send("No pools found."); }
     pools.forEach((pool) => {
+      delete pool.label;
       delete pool.invite;
+      // TODO: Add the owner of the pool.
     });
     res.status(200).send(pools);
   });
@@ -445,6 +453,7 @@ export let getMyPools = (req: Request, res: Response, next: NextFunction) => {
     }
     pools.forEach((pair) => {
       delete pair.node.invite;
+      delete pair.node.label;
     });
     return res.status(200).send(pools);
   });
@@ -461,6 +470,7 @@ export let getInvitedToPools = (req: Request, res: Response, next: NextFunction)
     }
     pools.forEach((pair) => {
       delete pair.node.invite;
+      delete pair.node.label;
     });
     return res.status(200).send(pools);
   });
@@ -475,6 +485,9 @@ export let getOwnPools = (req: Request, res: Response, next: NextFunction) => {
     if (err) {
       return next(err);
     }
+    pools.forEach((pair) => {
+      delete pair.node.label;
+    });
     return res.status(200).send(pools);
   });
 };

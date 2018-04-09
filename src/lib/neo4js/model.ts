@@ -118,25 +118,23 @@ export const model = (label: string, schema: Schema) => {
       }
     }
 
-    async updateRelationById(otherId: number, label: string, newProps: NeoProperties, next: NextFunction) {
-      // TODO: check with relationTypeDef
-      const query = `MATCH (n:${this.label})-[r:${label}]-(v) ` +
-                  `WHERE ID(n) = ${this._id} AND ID(v) = ${otherId}` +
+    async updateRelationById(otherId: number, label: string, newProps: NeoProperties, next: (err: Neo4jError, res: boolean) => void) {
+      const query = `MATCH (n:${label})-[r]-(v) ` +
+                  `WHERE ID(n) = ${this._id} AND ID(v) = ${otherId} ` +
                   `SET r = ${toQueryProps(newProps)}`;
 
       session.run(query).subscribe({
         onCompleted(summary: ResultSummary) {
-          next();
         },
         onNext(record: NeoRecord) { },
         onError(err: Neo4jError) {
           console.error(err);
-          next(err);
+          next(err, false);
         }
       });
     }
 
-    async updateRelation(match: NeoProperties, label: string, newProps: NeoProperties, next: NextFunction) {
+    async updateRelation(match: NeoProperties, label: string, newProps: NeoProperties, next: (err: Neo4jError, res: boolean) => void) {
       // TODO: check with relationTypeDef
       const query = `MATCH (n:${this.label})-[r:${label}]-(v ${toQueryProps(match)}) ` +
                   `WHERE ID(n) = ${this._id} ` +
@@ -144,12 +142,11 @@ export const model = (label: string, schema: Schema) => {
 
       session.run(query).subscribe({
         onCompleted(summary: ResultSummary) {
-          next();
         },
         onNext(record: NeoRecord) { },
         onError(err: Neo4jError) {
           console.error(err);
-          next(err);
+          next(err, false);
         }
       });
     }
@@ -186,7 +183,7 @@ export const model = (label: string, schema: Schema) => {
     }
 
     static async findById(id: number, next: FindCallback) {
-      const query = `MATCH (n) where ID(n) = ${id} RETURN n`;
+      const query = `MATCH (n: ${label}) where ID(n) = ${id} RETURN n`;
       let found = false;
       session.run(query).subscribe({
         onCompleted() {
@@ -296,10 +293,16 @@ export const model = (label: string, schema: Schema) => {
                     `WHERE ID(u) = ${this._id} AND ID(v) = ${other._id} ` +
                     `RETURN EXISTS((u)${relStr}(v))`;
 
+      let found = false;
       session.run(query).subscribe({
-        onCompleted(summary: ResultSummary) { },
+        onCompleted(summary: ResultSummary) {
+          if (!found) {
+            next(undefined, false);
+          }
+        },
 
         onNext(record: NeoRecord) {
+          found = true;
           next(undefined, record._fields[0]);
       },
 
