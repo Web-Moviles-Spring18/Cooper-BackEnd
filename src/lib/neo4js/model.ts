@@ -104,23 +104,25 @@ export const model = (label: string, schema: Schema) => {
       }
     }
 
-    async updateRelation(match: NeoProperties, newProps: NeoProperties, next: NextFunction) {
+    async updateRelation(match: NeoProperties, newProps: NeoProperties, next: (err: Neo4jError, success: boolean) => void) {
       const query = `MATCH (n:${label})-[r]-(v ${toQueryProps(match)}) ` +
                   `WHERE ID(n) = ${this._id} ` +
                   `SET r = ${toQueryProps(newProps)}`;
 
       session.run(query).subscribe({
         onCompleted(summary: ResultSummary) {
-          console.log(summary);
+          if (summary.updateStatistics._stats.propertiesSet == 0) {
+            next(undefined, false);
+          } else {
+            next(undefined, true);
+          }
         },
-        onNext(record: NeoRecord) {
-          console.log(record);
-        },
+        onNext(record: NeoRecord) { },
         onError(err: Neo4jError) {
           console.error(err);
+          next(err, false);
         }
       });
-      next();
     }
 
     // TODO: Pagination
@@ -155,7 +157,7 @@ export const model = (label: string, schema: Schema) => {
     }
 
     static async findById(id: number, next: FindCallback) {
-      const query = `MATCH (n) where ID(n) = ${id} RETURN n`;
+      const query = `MATCH (n: ${label}) where ID(n) = ${id} RETURN n`;
       let found = false;
       session.run(query).subscribe({
         onCompleted() {
@@ -238,10 +240,16 @@ export const model = (label: string, schema: Schema) => {
                     `WHERE ID(u) = ${this._id} AND ID(v) = ${other._id} ` +
                     `RETURN EXISTS((u)${relStr}(v))`;
 
+      let found = false;
       session.run(query).subscribe({
-        onCompleted(summary: ResultSummary) { },
+        onCompleted(summary: ResultSummary) {
+          if (!found) {
+            next(undefined, false);
+          }
+        },
 
         onNext(record: NeoRecord) {
+          found = true;
           next(undefined, record._fields[0]);
       },
 

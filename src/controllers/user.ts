@@ -67,8 +67,7 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   const errors = req.validationErrors();
 
   if (errors) {
-    console.log(errors);
-    // return res.status(400).send(errors);
+    return res.status(400).send(errors);
   }
 
   const user = new User({
@@ -128,11 +127,11 @@ export let searchUser = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export let getUser = (req: Request, res: Response) => {
-  User.findOne({ email: req.params.email }, (err, user: UserType) => {
+  User.findById(req.params.id, (err, user: UserType) => {
     if (err) {
       return res.status(500).send("Something went wrong. Please try again later.");
     } else if (!user) {
-      return res.status(404).send(`User with email ${req.params.email} not found.`);
+      return res.status(404).send(`User with id ${req.params.id} not found.`);
     } else {
       delete user.password;
       delete user.label;
@@ -173,10 +172,9 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
   User.findOne({ email: req.user.email }, (err, user: UserType) => {
     if (err) { return next(err); }
     user.email = req.body.email || user.email;
-    user.name = req.body.name || "";
-    user.gender = req.body.gender || "";
-    user.location = req.body.location || "";
-    user.website = req.body.website || "";
+    user.name = req.body.name || user.name || "";
+    user.gender = req.body.gender || user.gender || "";
+    user.location = req.body.location || user.location || "";
     user.save((err: Neo4jError) => {
       if (process.env.NODE_ENV == "development") {
         console.error(err);
@@ -221,8 +219,12 @@ export let getFriendRequest = (req: Request, res: Response, next: NextFunction) 
   User.findById(req.params.uid, (err, notYourFriend: UserType) => {
     if (err) { return next(err); }
     if (!notYourFriend) { return res.status(404).send("User not found D:"); }
-    req.user.friendRequest(notYourFriend);
-    res.status(200).send("Friend request sent!");
+    notYourFriend.hasRelationWith("friendRequest", req.user, "any", (err, isFriend) => {
+      if (err) { return next(err); }
+      if (isFriend) { return res.status(400).send("A friend request for or from this user already exists."); }
+      req.user.friendRequest(notYourFriend);
+      res.status(200).send("Friend request sent!");
+    });
   });
 };
 
