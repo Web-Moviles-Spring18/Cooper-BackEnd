@@ -118,7 +118,7 @@ export const model = (label: string, schema: Schema) => {
       }
     }
 
-    async updateRelationById(otherId: number, label: string, newProps: NeoProperties, next: (err: Neo4jError, res: boolean) => void) {
+    async updateRelationById(otherId: number, label: string, newProps: NeoProperties, next: (err: Neo4jError, success: boolean) => void) {
       const query = `MATCH (n:${label})-[r]-(v) ` +
                   `WHERE ID(n) = ${this._id} AND ID(v) = ${otherId} ` +
                   `SET r = ${toQueryProps(newProps)}`;
@@ -134,7 +134,7 @@ export const model = (label: string, schema: Schema) => {
       });
     }
 
-    async updateRelation(match: NeoProperties, label: string, newProps: NeoProperties, next: (err: Neo4jError, res: boolean) => void) {
+    async updateRelation(match: NeoProperties, label: string, newProps: NeoProperties, next: (err: Neo4jError, success: boolean) => void) {
       // TODO: check with relationTypeDef
       const query = `MATCH (n:${this.label})-[r:${label}]-(v ${toQueryProps(match)}) ` +
                   `WHERE ID(n) = ${this._id} ` +

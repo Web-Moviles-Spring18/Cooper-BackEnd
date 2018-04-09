@@ -285,7 +285,7 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
  * Pay pool.
  */
 export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
-  req.assert("amount", "Amount must be a number").isNumeric();
+  req.assert("amount", "Amount must be a number").isFloat();
 
   const errors = req.validationErrors();
 
@@ -299,6 +299,8 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
     }
     const pool = relation.node;
     const poolUser = relation.relation;
+    console.log(pool);
+    console.log(poolUser);
     if (!pool) {
       return res.status(404).send("Pool not found.");
     }
@@ -335,7 +337,7 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
         pool.updateRelation({ email: req.user.email }, "participatesIn", {
           paid: newPaid,
           debt: newDebt
-        }, (err) => {
+        }, (err, success) => {
           if (err) {
             return next(err);
           }
