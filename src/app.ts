@@ -135,7 +135,7 @@ app.get("/profile/friends/requests", auth.isAuthenticated, userController.getFri
 /**
  * Friends routes.
  */
-app.get("/friend/request/:uid", auth.isAuthenticated, userController.getFriendRequest);
+app.get("/friend/request/:uid", auth.isAuthenticated, userController.getSendFriendRequest);
 app.get("/friend/accept/:uid", auth.isAuthenticated, userController.getAcceptFriendRequest);
 app.get("/friend/decline/:uid", auth.isAuthenticated, userController.getDeclineFriendRequest);
 // IDEA: public pools between friends, private pools only by invitation.

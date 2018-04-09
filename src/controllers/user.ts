@@ -308,7 +308,7 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
  * POST /friend/request/:uid
  * Send friend request to the user with the given id.
  */
-export let getFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+export let getSendFriendRequest = (req: Request, res: Response, next: NextFunction) => {
   User.findById(req.params.uid, (err, notYourFriend: UserType) => {
     if (err) {
       return next(err);
