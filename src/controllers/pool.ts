@@ -161,7 +161,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
           if (hasInvitation) {
             return res.status(403).send(`${user.name || user.email} is already invited.`);
           }
-          pool.inviteUser(req.user, user, (err, result) => {
+          pool.inviteUser(<any>req.user, user, (err, result) => {
             if (err) {
               console.error(err);
               return next(err);
@@ -193,7 +193,7 @@ export let getAcceptInvite = (req: Request, res: Response, next: NextFunction) =
       }
       if (!hasInivitation) { return res.status(401).send("Sorry, you are not invited to this pool."); }
       req.user.participatesIn(pool, { debt: 0, paid: 0 }).then(() => {
-        pool.removeRelation("invitedTo", req.user, (err: Error) => {
+        pool.removeRelation("invitedTo", <any>req.user, (err: Error) => {
           if (err) { next(err); }
         });
         res.status(200).send(`Congratulations! You just joined ${pool.name}.`);
@@ -220,7 +220,7 @@ export let getDeclineInvite = (req: Request, res: Response, next: NextFunction) 
         return next(err);
       }
       if (!hasInivitation) { return res.status(401).send("You are not invited to this pool."); }
-      pool.removeRelation("invitedTo", req.user, (err: Error) => {
+      pool.removeRelation("invitedTo", <any>req.user, (err: Error) => {
         if (err) {
           return next(err);
         }
@@ -356,7 +356,7 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
         if (req.body.source) {
           charge.source = req.body.source;
         }
-        processPayment(req.user, charge).then(payment => {
+        processPayment(<any>req.user, charge).then(payment => {
           res.status(200).send({
             message: "Payment with credit card not implemented.",
             debt: poolUser.debt,
@@ -383,7 +383,7 @@ export let getUsersWithDebt = (req: Request, res: Response, next: NextFunction) 
     if (err) {
       return next(err);
     }
-    pool.hasRelationWith("participatesIn", req.user, "in", (err: Error, exists: boolean) => {
+    pool.hasRelationWith("participatesIn", <any>req.user, "in", (err: Error, exists: boolean) => {
       if (err) {
         return next(err);
       }
@@ -416,7 +416,7 @@ export let getUsersOverpaid = (req: Request, res: Response, next: NextFunction) 
     if (err) {
       return next(err);
     }
-    pool.hasRelationWith("participatesIn", req.user, "in", (err: Error, exists: boolean) => {
+    pool.hasRelationWith("participatesIn", <any>req.user, "in", (err: Error, exists: boolean) => {
       if (err) {
         return next(err);
       }
@@ -522,7 +522,7 @@ export let getOwnPools = (req: Request, res: Response, next: NextFunction) => {
        return res.status(404).send("Pool not found.");
      }
 
-     pool.hasRelationWith("participatesIn", req.user, "in", (err: Error, exists: boolean) => {
+     pool.hasRelationWith("participatesIn", <any>req.user, "in", (err: Error, exists: boolean) => {
        if (!exists) {
          req.user.participatesIn(pool, { debt: 0, paid: 0 }).then(() => {
            res.status(200).send("Succesfully joined pool!");

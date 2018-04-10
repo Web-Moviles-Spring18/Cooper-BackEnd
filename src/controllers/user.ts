@@ -314,7 +314,7 @@ export let getSendFriendRequest = (req: Request, res: Response, next: NextFuncti
       return next(err);
     }
     if (!notYourFriend) { return res.status(404).send("User not found D:"); }
-    notYourFriend.hasRelationWith("friendRequest", req.user, "any", (err, isFriend) => {
+    notYourFriend.hasRelationWith("friendRequest", <any>req.user, "any", (err, isFriend) => {
       if (err) { return next(err); }
       if (isFriend) { return res.status(400).send("A friend request for or from this user already exists."); }
       req.user.friendRequest(notYourFriend);
@@ -374,8 +374,8 @@ export let getAcceptFriendRequest = (req: Request, res: Response, next: NextFunc
         return next(err);
       }
       if (!hasFriendRequest) { return res.status(401).send("No friend request found."); }
-      user.friendOf(req.user).then(() => {
-        user.removeRelation("friendRequest", req.user, (err: Error) => {
+      user.friendOf(<any>req.user).then(() => {
+        user.removeRelation("friendRequest", <any>req.user, (err: Error) => {
           if (err) { next(err); }
         });
         res.status(200).send(`Congratulations! ${user.name || user.email} is now your friend.`);
@@ -401,7 +401,7 @@ export let getDeclineFriendRequest = (req: Request, res: Response, next: NextFun
         return next(err);
       }
       if (!hasFriendRequest) { return res.status(401).send("No friend request found."); }
-      user.removeRelation("friendRequest", req.user, (err: Error) => {
+      user.removeRelation("friendRequest", <any>req.user, (err: Error) => {
         if (err) {
           return next(err);
         }
