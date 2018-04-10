@@ -5,8 +5,10 @@ import { default as User, AuthToken, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { INode, Neo4jError, Relationship } from "neo4js";
-import * as sgMail from "@sendgrid/mail";
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// import * as sgMail from "@sendgrid/mail";
+import * as Stripe from "stripe";
+const stripe = new Stripe(process.env.STRIPE_KEY);
+// sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
  * POST /login
@@ -28,12 +30,16 @@ export let login = (req: Request, res: Response, next: NextFunction) => {
   }
 
   passport.authenticate("local", (err: Error, user: UserType, info: IVerifyOptions) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     if (!user) {
       return res.status(400).send(info.message);
     }
     req.logIn(user, (err: Error) => {
-      if (err) { return next(err); }
+      if (err) {
+        return next(err);
+      }
       res.status(200).send("Success! You are logged in.");
     });
   })(req, res, next);
@@ -67,8 +73,7 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   const errors = req.validationErrors();
 
   if (errors) {
-    console.log(errors);
-    // return res.status(400).send(errors);
+    return res.status(400).send(errors);
   }
 
   const user = new User({
@@ -96,7 +101,9 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
       return res.status(400).send("Account with that email address already exists.");
     }
     user.save((err: Error) => {
-      if (err) { return next(err); }
+      if (err) {
+        return next(err);
+      }
       req.logIn(user, (err: Error) => {
         if (err) {
           return next(err);
@@ -105,6 +112,83 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
       });
     });
   });
+};
+
+/**
+ * POST /user/update_payment
+ * Create a new stripe customer and payment source
+ * or update this user's defualt payment source.
+ */
+export let postUpdatePayment = (req: Request, res: Response, next: NextFunction) => {
+  req.assert("token", "Stripe token string is required.").isAscii();
+
+  const errors = req.validationErrors();
+  if (errors) {
+    return res.status(400).send(errors);
+  }
+
+  if (!req.user.customer) {
+    stripe.customers.create({
+      email: req.user.email,
+      source: req.body.token
+    }, function(err: any, customer: Stripe.customers.ICustomer) {
+      if (err) {
+        return next(err);
+      }
+
+      req.user.customer = customer.id;
+      req.user.save((err: Error) => {
+        if (err) {
+          return next(err);
+        }
+        res.status(201).send({
+          message: "Payment information added!",
+          ...customer
+        });
+      });
+    });
+  } else {
+    stripe.customers.update(req.user.customer, {
+      default_source: req.body.token
+    }, function(err: any, customer: Stripe.customers.ICustomer) {
+      if (err) {
+        next(err);
+      }
+      res.status(201).send({
+        message: "Payment information added!",
+        ...customer
+      });
+    });
+  }
+};
+
+/**
+ * DELETE /user/update_payment
+ * Create a new stripe customer and payment source
+ * or update this user's defualt payment source.
+ */
+export let deletePayment = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user.customer) {
+    delete req.user.customer;
+    req.user.save((err: Neo4jError) => {
+      if (err) {
+        next(err);
+      }
+      res.status(200).send("Profile information has been updated.");
+    });
+  } else {
+    stripe.customers.update(req.user.customer, {
+      default_source: req.body.token
+    }, function(err: any, customer: Stripe.customers.ICustomer) {
+      if (err) {
+        next(err);
+      }
+      res.status(201).send({
+        message: "Payment information updated!",
+        ...customer
+      });
+    });
+  }
 };
 
 /**
@@ -117,7 +201,9 @@ export let searchUser = (req: Request, res: Response, next: NextFunction) => {
     name: `(?i).*${req.params.name}.*`,
     email: `(?i).*${req.params.name}.*`
   }, {}, (err, users) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     users.forEach((user) => {
       delete user.password;
       delete user.label;
@@ -128,11 +214,11 @@ export let searchUser = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export let getUser = (req: Request, res: Response) => {
-  User.findOne({ email: req.params.email }, (err, user: UserType) => {
+  User.findById(req.params.id, (err, user: UserType) => {
     if (err) {
       return res.status(500).send("Something went wrong. Please try again later.");
     } else if (!user) {
-      return res.status(404).send(`User with email ${req.params.email} not found.`);
+      return res.status(404).send(`User with id ${req.params.id} not found.`);
     } else {
       delete user.password;
       delete user.label;
@@ -171,12 +257,13 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
   }
 
   User.findOne({ email: req.user.email }, (err, user: UserType) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     user.email = req.body.email || user.email;
-    user.name = req.body.name || "";
-    user.gender = req.body.gender || "";
-    user.location = req.body.location || "";
-    user.website = req.body.website || "";
+    user.name = req.body.name || user.name || "";
+    user.gender = req.body.gender || user.gender || "";
+    user.location = req.body.location || user.location || "";
     user.save((err: Neo4jError) => {
       if (process.env.NODE_ENV == "development") {
         console.error(err);
@@ -204,10 +291,14 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
   }
 
   User.findOne({ email: req.user.email }, (err: Error, user: UserType) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     user.password = req.body.password;
     user.save((err: Neo4jError) => {
-      if (err) { return next(err); }
+      if (err) {
+        return next(err);
+      }
       res.status(200).send("Password has been changed.");
     });
   });
@@ -217,12 +308,18 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
  * POST /friend/request/:uid
  * Send friend request to the user with the given id.
  */
-export let getFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+export let getSendFriendRequest = (req: Request, res: Response, next: NextFunction) => {
   User.findById(req.params.uid, (err, notYourFriend: UserType) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     if (!notYourFriend) { return res.status(404).send("User not found D:"); }
-    req.user.friendRequest(notYourFriend);
-    res.status(200).send("Friend request sent!");
+    notYourFriend.hasRelationWith("friendRequest", <any>req.user, "any", (err, isFriend) => {
+      if (err) { return next(err); }
+      if (isFriend) { return res.status(400).send("A friend request for or from this user already exists."); }
+      req.user.friendRequest(notYourFriend);
+      res.status(200).send("Friend request sent!");
+    });
   });
 };
 
@@ -232,7 +329,9 @@ export let getFriendRequest = (req: Request, res: Response, next: NextFunction) 
  */
 export let getFriendRequests = (req: Request, res: Response, next: NextFunction) => {
   req.user.getRelated("friendRequest", User, "in", (err: Error, notYourFriends: Relationship[]) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     notYourFriends.forEach((pair) => {
       delete pair.node.password;
       delete pair.node.label;
@@ -248,7 +347,9 @@ export let getFriendRequests = (req: Request, res: Response, next: NextFunction)
  */
 export let getFriends = (req: Request, res: Response, next: NextFunction) => {
   req.user.getRelated("friendOf", User, "any", (err: Error, friends: Relationship[]) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     friends.forEach((pair) => {
       delete pair.node.password;
       delete pair.node.label;
@@ -264,13 +365,17 @@ export let getFriends = (req: Request, res: Response, next: NextFunction) => {
  */
 export let getAcceptFriendRequest = (req: Request, res: Response, next: NextFunction) => {
   User.findById(req.params.uid, (err, user: UserType) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     if (!user) { return res.status(404).send(`User with id ${req.params.uid} not found.`); }
     req.user.hasRelationWith("friendRequest", user, "in", (err: Error, hasFriendRequest: boolean) => {
-      if (err) { return next(err); }
+      if (err) {
+        return next(err);
+      }
       if (!hasFriendRequest) { return res.status(401).send("No friend request found."); }
-      user.friendOf(req.user).then(() => {
-        user.removeRelation("friendRequest", req.user, (err: Error) => {
+      user.friendOf(<any>req.user).then(() => {
+        user.removeRelation("friendRequest", <any>req.user, (err: Error) => {
           if (err) { next(err); }
         });
         res.status(200).send(`Congratulations! ${user.name || user.email} is now your friend.`);
@@ -287,13 +392,19 @@ export let getAcceptFriendRequest = (req: Request, res: Response, next: NextFunc
  */
 export let getDeclineFriendRequest = (req: Request, res: Response, next: NextFunction) => {
   User.findById(req.params.uid, (err, user: UserType) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     if (!user) { return res.status(404).send(`User with id ${req.params.uid} not found.`); }
     req.user.hasRelationWith("friendRequest", user, "in", (err: Error, hasFriendRequest: boolean) => {
-      if (err) { return next(err); }
+      if (err) {
+        return next(err);
+      }
       if (!hasFriendRequest) { return res.status(401).send("No friend request found."); }
-      user.removeRelation("friendRequest", req.user, (err: Error) => {
-        if (err) { return next(err); }
+      user.removeRelation("friendRequest", <any>req.user, (err: Error) => {
+        if (err) {
+          return next(err);
+        }
         res.status(200).send(`Friend request from ${user.name || user.email} declined.`);
       });
     });
@@ -306,7 +417,9 @@ export let getDeclineFriendRequest = (req: Request, res: Response, next: NextFun
  */
 export let getDeleteAccount = (req: Request, res: Response, next: NextFunction) => {
   User.remove({ email: req.user.email }, (err: Neo4jError) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     req.logout();
     res.status(200).send("Your account has been deleted.");
   });
@@ -319,11 +432,15 @@ export let getDeleteAccount = (req: Request, res: Response, next: NextFunction) 
 export let getOauthUnlink = (req: Request, res: Response, next: NextFunction) => {
   const provider = req.params.provider;
   User.findOne({ email: req.user.email }, (err, user: any) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     user[provider] = undefined;
     user.tokens = user.tokens.filter((token: AuthToken) => token.kind !== provider);
     user.save((err: Error) => {
-      if (err) { return next(err); }
+      if (err) {
+        return next(err);
+      }
       res.status(200).send(`${provider} account has been unlinked`);
     });
   });
@@ -338,7 +455,9 @@ export let getReset = (req: Request, res: Response, next: NextFunction) => {
     return res.status(401).send("You are already logged in.");
   }
   User.findOne({ passwordResetToken: req.params.token }, (err, user) => {
-      if (err) { return next(err); }
+      if (err) {
+        return next(err);
+      }
       if (!user  || user.passwordResetToken < Date.now()) {
         return res.status(403).send("Password reset token is invalid or has expired.");
       }
@@ -373,7 +492,9 @@ export let postReset = (req: Request, res: Response, next: NextFunction) => {
           user.passwordResetToken = undefined;
           user.passwordResetExpires = undefined;
           user.save((err: Neo4jError) => {
-            if (err) { return next(err); }
+            if (err) {
+              return next(err);
+            }
             req.logIn(user, (err: Error) => {
               done(err, user);
             });
@@ -387,13 +508,15 @@ export let postReset = (req: Request, res: Response, next: NextFunction) => {
         subject: "Your password has been changed",
         text: `Hello,\n\nThis is a confirmation that the password for your account ${user.email} has just been changed.\n`
       };
-      sgMail.send(msg, false, (err: Error) => {
-        res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
-        done(err);
-      });
+      // sgMail.send(msg, false, (err: Error) => {
+      //   res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
+      //   done(err);
+      // });
     }
   ], (err: Error) => {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     res.status(500).send("Something went terribly wrong");
   });
 };
@@ -440,10 +563,10 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
           http://${req.headers.host}/reset/${token}\n\n
           If you did not request this, please ignore this email and your password will remain unchanged.\n`
       };
-      sgMail.send(msg, false, (err: Error) => {
-        res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
-        done(err);
-      });
+      // sgMail.send(msg, false, (err: Error) => {
+      //   res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
+      //   done(err);
+      // });
     }
   ], (err: Error) => {
     if (err) {

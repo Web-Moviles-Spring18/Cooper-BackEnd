@@ -94,19 +94,18 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
 /**
  * Primary app routes.
  */
- app.get("/hello", (req, res) => res.status(200).send("Hello there!"));
+app.get("/hello", (req, res) => res.status(200).send("Hello there!"));
 app.post("/login", userController.login);
 app.get("/logout", userController.logout);
 app.post("/forgot", userController.forgot);
 app.get("/reset/:token", userController.getReset);
 app.post("/reset/:token", userController.postReset);
 app.post("/signup", userController.signup);
-app.get("/account", auth.isAuthenticated, userController.account);
 
 /**
  * User routes.
  */
-app.get("/user/:email", auth.isAuthenticated, userController.getUser);
+app.get("/user/:id", auth.isAuthenticated, userController.getUser);
 app.get("/user/search/:name", userController.searchUser);
 
 /**
@@ -114,16 +113,20 @@ app.get("/user/search/:name", userController.searchUser);
  */
 app.post("/pool", auth.isAuthenticated, poolController.postPool);
 app.post("/pool/:id/invite", auth.isAuthenticated, poolController.postInvite);
+app.post("/pool/:id/pay", auth.isAuthenticated, poolController.postPayPool);
 app.post("/pool/:id", auth.isAuthenticated, poolController.postUpdateUserPool);
 app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 app.get("/pool/accept/:id", auth.isAuthenticated, poolController.getAcceptInvite);
 app.get("/pool/decline/:id", auth.isAuthenticated, poolController.getDeclineInvite);
 app.get("/pool/:id", auth.isAuthenticated, poolController.getPool);
+app.get("/pool/:id/users/debt", auth.isAuthenticated, poolController.getUsersWithDebt);
+app.get("/pool/:id/users/overpaid", auth.isAuthenticated, poolController.getUsersOverpaid);
 
 /**
  * Profile routes.
  */
 app.get("/profile/pools", auth.isAuthenticated, poolController.getMyPools);
+app.get("/profile/pools/invites", auth.isAuthenticated, poolController.getPoolInvites);
 app.get("/profile/own/pools", auth.isAuthenticated, poolController.getOwnPools);
 app.get("/pool/search/:name", poolController.searchPool);
 app.get("/profile/friends", auth.isAuthenticated, userController.getFriends);
@@ -132,14 +135,22 @@ app.get("/profile/friends/requests", auth.isAuthenticated, userController.getFri
 /**
  * Friends routes.
  */
-app.get("/friend/request/:uid", auth.isAuthenticated, userController.getFriendRequest);
+app.get("/friend/request/:uid", auth.isAuthenticated, userController.getSendFriendRequest);
 app.get("/friend/accept/:uid", auth.isAuthenticated, userController.getAcceptFriendRequest);
 app.get("/friend/decline/:uid", auth.isAuthenticated, userController.getDeclineFriendRequest);
 // IDEA: public pools between friends, private pools only by invitation.
+// IDEA: Find friends with facebook.
 
 // app.get("/contact", contactController.getContact);
 // app.post("/contact", contactController.postContact);
 
+
+/**
+ * Account routes.
+ */
+app.get("/account", auth.isAuthenticated, userController.account);
+app.post("/account/update_payment", auth.isAuthenticated, userController.postUpdatePayment);
+app.delete("/account/payment", auth.isAuthenticated, userController.deletePayment);
 app.post("/account/profile", auth.isAuthenticated, userController.postUpdateProfile);
 app.post("/account/password", auth.isAuthenticated, userController.postUpdatePassword);
 app.get("/account/delete", auth.isAuthenticated, userController.getDeleteAccount);

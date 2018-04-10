@@ -141,7 +141,7 @@ export let isAuthenticated = (req: Request, res: Response, next: NextFunction) =
  */
 export let isAuthorized = (req: Request, res: Response, next: NextFunction) => {
   const provider = req.path.split("/").slice(-1)[0];
-  if (req.user.tokens.find((tkn: AuthToken) => tkn.kind === provider) !== undefined) {
+  if (req.user.tokens && req.user.tokens.find((tkn: AuthToken) => tkn.kind === provider) !== undefined) {
     next();
   } else {
     res.status(403).send("No, you won't!");

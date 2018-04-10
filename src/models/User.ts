@@ -24,6 +24,7 @@ export type UserType = INode & {
   gender?: string,
   location?: string, // TODO: make this a latLng object
   picture?: string,
+  customer?: string,
   owns: (pool: INode) => Promise<void>,
   friendRequest: (user: INode) => Promise<void>,
   friendOf: (friend: INode) => Promise<void>,
@@ -46,6 +47,7 @@ const userSchema = new Schema({
     type: String,
     required: true
   },
+  customer: String,
   passwordResetToken: String,
   passwordResetExpires: Date,
   tokens: String,

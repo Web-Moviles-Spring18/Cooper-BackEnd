@@ -1,7 +1,11 @@
-import { SchemaTypeOpts, PropDef, NeoProperties, NeoRecord, NeoType } from "neo4js";
+import { SchemaTypeOpts, PropDef, NeoProperties, NeoRecord, NeoType, RelationTypeOpts, RelationPropDef } from "neo4js";
 
 export const isSchemaTypeOpts = (propDef: PropDef): propDef is SchemaTypeOpts => (
   (<SchemaTypeOpts>propDef).type !== undefined
+);
+
+export const isRelationTypeOpts = (propDef: RelationPropDef): propDef is RelationTypeOpts => (
+  (<RelationTypeOpts>propDef).type !== undefined
 );
 
 export const isRegExp = (prop: any): prop is RegExp => (
@@ -47,7 +51,9 @@ export const createProps = (record: NeoRecord): NeoProperties => {
   return props;
 };
 
-// Neo4j numeric values return in the form { low: number, high: number } for some reason
+// Neo4j numeric values return in the form { low: number, high: number } because
+// Neo4j number may be bigger than what js allows.
+// FIXME: Use the neo4j driver to convert numbers
 export const flatNumericProps = (props: { [key: string]: any }) => {
   for (const prop in props) {
     if (props[prop].hasOwnProperty("low")) {

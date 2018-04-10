@@ -1,6 +1,6 @@
 import { session } from ".";
 import { Schema } from "./Schema";
-import { isSchemaTypeOpts, toQueryProps, createProps, checkType, flatNumericProps, isRegExp, toRegExQuery } from "./util";
+import { isSchemaTypeOpts, toQueryProps, createProps, checkType, flatNumericProps, isRegExp, toRegExQuery, isRelationTypeOpts } from "./util";
 import { NeoRecord, ResultSummary, SchemaTypeOpts, Neo4jError, NeoProperties, FindCallback, PropDef, NeoType, ISchema, INode, Model, Relationship } from "neo4js";
 import { NextFunction } from "express";
 
@@ -19,7 +19,9 @@ export const model = (label: string, schema: Schema) => {
         schema.uniqueProps.forEach(prop => {
           session.run(`CREATE CONSTRAINT ON (n:${label}) ASSERT n.${prop} IS UNIQUE`).subscribe({
             onCompleted(summary: ResultSummary) {
-              console.log(`Succesfully created unique constraint for ${label}.${prop}`);
+              if (process.env.NODE_ENV === "develop") {
+                console.log(`Succesfully created unique constraint for ${label}.${prop}`);
+              }
             }
           });
         });
@@ -35,7 +37,9 @@ export const model = (label: string, schema: Schema) => {
     const queryParams = schema.indexes.join(",");
     session.run(`CREATE INDEX ON :${label}(${queryParams})`).subscribe({
       onCompleted(summary: ResultSummary) {
-        console.log(`Succesfully created index for label ${label}`);
+        if (process.env.NODE_ENV === "develop") {
+          console.log(`Succesfully created index for label ${label}`);
+        }
       }
     });
   }
@@ -75,8 +79,18 @@ export const model = (label: string, schema: Schema) => {
             throw new Error(`Wrong node type: ${(<NeoNode>other).label} in relation ${relationName}.`);
           }
 
-          // TODO: Check that properties meet propDef.
-          // TODO: Put default properties defined in propDef.
+          for (const propName in properties) {
+            const propDef = properties[propName];
+            props = props === undefined ? {} : props;
+            if (isRelationTypeOpts(propDef)) {
+              if (props[propName] === undefined) {
+                props[propName] = propDef.default;
+              }
+              props[propName] = checkType(propName, props[propName], propDef.type);
+            } else {
+              props[propName] = checkType(propName, props[propName], propDef);
+            }
+          }
           const query = `MATCH (a:${label}), (b:${other.label}) ` +
           `WHERE ID(a) = ${this._id} AND ID(b) = ${other._id} ` +
           `CREATE (a)-[r:${relationName} ${toQueryProps(props)}]->(b) ` +
@@ -104,23 +118,47 @@ export const model = (label: string, schema: Schema) => {
       }
     }
 
-    async updateRelation(match: NeoProperties, newProps: NeoProperties, next: NextFunction) {
-      const query = `MATCH (n:${label})-[r]-(v ${toQueryProps(match)}) ` +
+    async updateRelationById(otherId: number, label: string, newProps: NeoProperties, next: (err: Neo4jError, success: boolean) => void) {
+      const query = `MATCH (n:${label})-[r]-(v) ` +
+                  `WHERE ID(n) = ${this._id} AND ID(v) = ${otherId} ` +
+                  `SET r = ${toQueryProps(newProps)}`;
+
+      session.run(query).subscribe({
+        onCompleted(summary: ResultSummary) {
+          if (summary.updateStatistics._stats.propertiesSet == 0) {
+            next(undefined, false);
+          } else {
+            next(undefined, true);
+          }
+        },
+        onNext(record: NeoRecord) { },
+        onError(err: Neo4jError) {
+          console.error(err);
+          next(err, false);
+        }
+      });
+    }
+
+    async updateRelation(match: NeoProperties, label: string, newProps: NeoProperties, next: (err: Neo4jError, success: boolean) => void) {
+      // TODO: check with relationTypeDef
+      const query = `MATCH (n:${this.label})-[r:${label}]-(v ${toQueryProps(match)}) ` +
                   `WHERE ID(n) = ${this._id} ` +
                   `SET r = ${toQueryProps(newProps)}`;
 
       session.run(query).subscribe({
         onCompleted(summary: ResultSummary) {
-          console.log(summary);
+          if (summary.updateStatistics._stats.propertiesSet == 0) {
+            next(undefined, false);
+          } else {
+            next(undefined, true);
+          }
         },
-        onNext(record: NeoRecord) {
-          console.log(record);
-        },
+        onNext(record: NeoRecord) { },
         onError(err: Neo4jError) {
           console.error(err);
+          next(err, false);
         }
       });
-      next();
     }
 
     // TODO: Pagination
@@ -155,7 +193,7 @@ export const model = (label: string, schema: Schema) => {
     }
 
     static async findById(id: number, next: FindCallback) {
-      const query = `MATCH (n) where ID(n) = ${id} RETURN n`;
+      const query = `MATCH (n: ${label}) where ID(n) = ${id} RETURN n`;
       let found = false;
       session.run(query).subscribe({
         onCompleted() {
@@ -178,6 +216,33 @@ export const model = (label: string, schema: Schema) => {
           if (process.env.NODE_ENV === "development") {
             console.error(err);
           }
+          next(err, undefined);
+        }
+      });
+    }
+
+    async getRelationWith(relName: String, otherModel: Model, otherId: number, direction: "any" | "in" | "out", next: (err: Neo4jError, res: Relationship) => void) {
+      const relStr = direction === "out" ? `-[r:${relName}]->` :
+                     direction === "in"  ? `<-[r:${relName}]-` :
+                                            `-[r:${relName}]-`;
+      const query = `MATCH (u:${label})${relStr}(v) ` +
+                    `WHERE ID(u) = ${this._id} AND ID(v) = ${otherId} ` +
+                    `RETURN r, v`;
+
+      session.run(query).subscribe({
+        onCompleted(sum: ResultSummary) { },
+
+        onNext(response: NeoRecord) {
+          const relation = response._fields[0].properties;
+          const nodeFields = response._fields[1];
+          nodeFields.properties._id = nodeFields.identity.low;
+          flatNumericProps(nodeFields.properties);
+          flatNumericProps(relation);
+          const node = new otherModel(nodeFields.properties);
+          next(undefined, { relation, node });
+        },
+
+        onError(err: Neo4jError) {
           next(err, undefined);
         }
       });
@@ -238,10 +303,16 @@ export const model = (label: string, schema: Schema) => {
                     `WHERE ID(u) = ${this._id} AND ID(v) = ${other._id} ` +
                     `RETURN EXISTS((u)${relStr}(v))`;
 
+      let found = false;
       session.run(query).subscribe({
-        onCompleted(summary: ResultSummary) { },
+        onCompleted(summary: ResultSummary) {
+          if (!found) {
+            next(undefined, false);
+          }
+        },
 
         onNext(record: NeoRecord) {
+          found = true;
           next(undefined, record._fields[0]);
       },
 
