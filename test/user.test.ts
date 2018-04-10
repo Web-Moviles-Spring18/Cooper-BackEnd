@@ -149,3 +149,14 @@ describe("GET /account", () => {
     .expect(401, done);
   });
 });
+
+describe("GET /account", () => {
+  it("should return a 200 response if the user is logged in", function(done) {
+    authenticatedUser.get("/account")
+    .expect(200, done);
+  });
+  it("should return a 401 response Unauthorized", function(done) {
+    request(app).get("/account")
+    .expect(401, done);
+  });
+});
