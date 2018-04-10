@@ -5,10 +5,10 @@ import { default as User, AuthToken, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { INode, Neo4jError, Relationship } from "neo4js";
-import * as sgMail from "@sendgrid/mail";
+// import * as sgMail from "@sendgrid/mail";
 import * as Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_KEY);
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
  * POST /login
@@ -508,10 +508,10 @@ export let postReset = (req: Request, res: Response, next: NextFunction) => {
         subject: "Your password has been changed",
         text: `Hello,\n\nThis is a confirmation that the password for your account ${user.email} has just been changed.\n`
       };
-      sgMail.send(msg, false, (err: Error) => {
-        res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
-        done(err);
-      });
+      // sgMail.send(msg, false, (err: Error) => {
+      //   res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
+      //   done(err);
+      // });
     }
   ], (err: Error) => {
     if (err) {
@@ -563,10 +563,10 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
           http://${req.headers.host}/reset/${token}\n\n
           If you did not request this, please ignore this email and your password will remain unchanged.\n`
       };
-      sgMail.send(msg, false, (err: Error) => {
-        res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
-        done(err);
-      });
+      // sgMail.send(msg, false, (err: Error) => {
+      //   res.status(200).send(`An e-mail has been sent to ${user.email} with further instructions.`);
+      //   done(err);
+      // });
     }
   ], (err: Error) => {
     if (err) {
