@@ -68,6 +68,7 @@ userSchema.pre("save", function hashPassword(next: Function) {
   if (user.tokens) {
     user.tokens = JSON.stringify(user.tokens);
   }
+  next();
 });
 
 userSchema.pre("findOne", function parseTokens(next: Function) {
