@@ -84,9 +84,9 @@ export let postUpdateUserPool = (req: Request, res: Response, next: NextFunction
       if (err) {
         return next(err);
       }
-      if (!userOwnsPool) {
-        return res.status(401).send("You don't own this pool");
-      }
+      // if (!userOwnsPool) {
+      //   return res.status(401).send("You don't own this pool");
+      // }
 
       req.assert("userEmail", "Invalid email").isEmail();
       req.sanitize("userEmail").normalizeEmail({ gmail_remove_dots: false });
@@ -141,7 +141,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
         return next(err);
       }
       if (!userOwnsPool) {
-        return res.status(401).send("You don't own this pool.");
+        return res.status(403).send("You don't own this pool.");
       }
 
       req.assert("email", "Invalid email").isEmail();
