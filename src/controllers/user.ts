@@ -98,7 +98,7 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { next(err); }
     if (process.env.NODE_ENV === "development") {
-      console.log(existingUser);
+      // console.log(existingUser);
     }
     if (existingUser) {
       return res.status(400).send("Account with that email address already exists.");
@@ -108,11 +108,19 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
       bcrypt.hash(<string>user.password, salt, undefined, (err: Error, hash: string) => {
         if (err) { return next(err); }
         user.password = hash;
+        console.log(1);
+        console.log(user);
         user.save((err: Error) => {
+          console.log(2);
+          console.log(user);
           if (err) {
+            console.log(3);
+            console.log(user);
             return next(err);
           }
           req.logIn(user, (err: Error) => {
+            console.log(4);
+            console.log(user);
             if (err) {
               return next(err);
             }
