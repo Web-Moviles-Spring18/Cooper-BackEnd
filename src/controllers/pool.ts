@@ -166,7 +166,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
               console.error(err);
               return next(err);
             }
-            if (process.env.NODE_ENV === "develop") {
+            if (process.env.NODE_ENV === "development") {
               console.log(result);
             }
             res.status(200).send("Invitation sent!");
@@ -299,8 +299,6 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
     }
     const pool = relation.node;
     const poolUser = relation.relation;
-    console.log(pool);
-    console.log(poolUser);
     if (!pool) {
       return res.status(404).send("Pool not found.");
     }

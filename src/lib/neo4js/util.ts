@@ -14,7 +14,6 @@ export const isRegExp = (prop: any): prop is RegExp => (
 
 export const checkType = (key: string, value: NeoType, propDef: PropDef): NeoType => {
   if (propDef === Date && value !== undefined && value.constructor === String) {
-    console.log("return to date type");
     return new Date(<string>value);
   }
   if (value !== undefined && value.constructor !== propDef) {

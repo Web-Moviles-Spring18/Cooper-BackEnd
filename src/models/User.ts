@@ -68,14 +68,6 @@ userSchema.pre("save", function hashPassword(next: Function) {
   if (user.tokens) {
     user.tokens = JSON.stringify(user.tokens);
   }
-  bcrypt.genSalt(10, (err, salt) => {
-    if (err) { return next(err); }
-    bcrypt.hash(user.password, salt, undefined, (err: Error, hash) => {
-      if (err) { return next(err); }
-      user.password = hash;
-      next();
-    });
-  });
 });
 
 userSchema.pre("findOne", function parseTokens(next: Function) {
