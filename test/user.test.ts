@@ -1,8 +1,36 @@
 import * as request from "supertest";
 import * as app from "../src/app";
-
 import * as chai from "chai";
-let expect = chai.expect;
+import * as mocha from "mocha";
+import { default as User } from "../src/models/User";
+
+process.env.NODE_ENV = "test";
+
+const expect = chai.expect;
+const assert = chai.assert;
+
+const newUserCredentials = {
+  email: "sergio.profe@gmail.com",
+  password: "contraseña",
+  confirmPassword: "contraseña"
+};
+
+const userCredentials = {
+  email: "hermes.espinola@gmail.com",
+  password: "contraseña"
+};
+
+const authenticatedUser = request.agent(app);
+describe("POST /signup", () => {
+  it("should be able to sign-up", (done) => {
+    return request(app).post("/signup")
+    .send(newUserCredentials)
+    .end((err: Error, res: Response) => {
+      expect(res.status).to.equal(201);
+      done();
+    });
+  });
+});
 
 describe("POST /login", () => {
   it("should return some defined error message with valid parameters", (done) => {
@@ -15,27 +43,16 @@ describe("POST /login", () => {
         done();
       });
   });
-
-  it("Should return a success code for a correct login.", (done) => {
-    return request(app).post("/login")
-      .field("email", "hermes.espinola@gmail.com")
-      .field("password", "password")
-      .end(function (err, response) {
-        expect(response.statusCode).to.equal(200);
-        expect('Location', '/account');
-        done();
-      });
-  });
 });
 
-describe("POST /signup", () => {
-  it("Should return a success code for correct account creation.", (done) => {
-    return request(app).post("/signup")
-      .field("email", "rodremur@gmail.com")
-      .field("password", "abc123456")
-      .field("confirmPassword", "abc123456")
-      .end(function (err, response) {
-        expect(response.statusCode).to.equal(201);
+// Login con datos correctos
+describe("POST /login", () => {
+  it("Should return 200", (done) => {
+    return request(app).post("/login")
+      .send(newUserCredentials)
+      .expect(200)
+      .end(function(err, res) {
+        expect(res.status).to.equal(200);
         done();
       });
   });
@@ -54,9 +71,7 @@ describe("POST /signup", () => {
 
   it("Should return an error in the creation due to account already existing.", (done) => {
     return request(app).post("/signup")
-      .field("email", "hermes.espinola@gmail.com")
-      .field("password", "password")
-      .field("confirmPassword", "password")
+      .send(newUserCredentials)
       .expect(400)
       .end(function (err, res) {
         expect(res.error).not.to.be.undefined;
@@ -86,5 +101,29 @@ describe("POST /signup", () => {
         expect(res.error).not.to.be.undefined;
         done();
       });
+  });
+  it("should return a 401 response Unauthorized", function(done) {
+    request(app).get("/account")
+    .expect(401, done);
+  });
+});
+
+describe("GET /account", () => {
+  it("should return a 200 response if the user is logged in", function(done) {
+    authenticatedUser.get("/account")
+    .expect(200, done);
+  });
+  it("should return a 401 response Unauthorized", function(done) {
+    request(app).get("/account")
+    .expect(401, done);
+  });
+});
+
+// describe("")
+
+afterAll(() => {
+  console.log("After all");
+  User.remove(newUserCredentials, () => {
+    console.log("Test user removed.");
   });
 });

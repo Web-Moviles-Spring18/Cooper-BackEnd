@@ -19,7 +19,7 @@ export const model = (label: string, schema: Schema) => {
         schema.uniqueProps.forEach(prop => {
           session.run(`CREATE CONSTRAINT ON (n:${label}) ASSERT n.${prop} IS UNIQUE`).subscribe({
             onCompleted(summary: ResultSummary) {
-              if (process.env.NODE_ENV === "develop") {
+              if (process.env.NODE_ENV === "development") {
                 console.log(`Succesfully created unique constraint for ${label}.${prop}`);
               }
             }
@@ -37,7 +37,7 @@ export const model = (label: string, schema: Schema) => {
     const queryParams = schema.indexes.join(",");
     session.run(`CREATE INDEX ON :${label}(${queryParams})`).subscribe({
       onCompleted(summary: ResultSummary) {
-        if (process.env.NODE_ENV === "develop") {
+        if (process.env.NODE_ENV === "development") {
           console.log(`Succesfully created index for label ${label}`);
         }
       }
@@ -542,7 +542,6 @@ const _save = (self: INode, label: String, schema: Schema,
     },
     onNext(record: NeoRecord) {
       self._id = record._fields[0].identity.low;
-      console.log(self._id);
       if (process.env.NODE_ENV === "development") {
         console.log(record);
       }

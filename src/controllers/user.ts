@@ -1,5 +1,6 @@
 import * as async from "async";
 import * as crypto from "crypto";
+import * as bcrypt from "bcrypt-nodejs";
 import * as passport from "passport";
 import { default as User, AuthToken, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
@@ -96,19 +97,28 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { next(err); }
-    console.log(existingUser);
+    if (process.env.NODE_ENV === "development") {
+      console.log(existingUser);
+    }
     if (existingUser) {
       return res.status(400).send("Account with that email address already exists.");
     }
-    user.save((err: Error) => {
-      if (err) {
-        return next(err);
-      }
-      req.logIn(user, (err: Error) => {
-        if (err) {
-          return next(err);
-        }
-        res.status(201).send("Success! User registered.");
+    bcrypt.genSalt(10, (err, salt) => {
+      if (err) { return next(err); }
+      bcrypt.hash(<string>user.password, salt, undefined, (err: Error, hash: string) => {
+        if (err) { return next(err); }
+        user.password = hash;
+        user.save((err: Error) => {
+          if (err) {
+            return next(err);
+          }
+          req.logIn(user, (err: Error) => {
+            if (err) {
+              return next(err);
+            }
+            res.status(201).send("Success! User registered.");
+          });
+        });
       });
     });
   });
