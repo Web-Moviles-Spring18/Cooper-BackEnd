@@ -66,10 +66,10 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
 
   // optional
-  req.assert("name", "Name must be a string").optional().isAlphanumeric();
-  req.assert("gender", "Gender must be a string").optional().isAlphanumeric();
+  req.assert("name", "Name must be a string").optional().isAscii();
+  req.assert("gender", "Gender must be a string").optional().isIn(["Male", "Female"]);
   req.assert("location", "Location must be a string").optional().isAlphanumeric();
-  req.assert("picture", "Picture must be a string").optional().isAlphanumeric();
+  req.assert("picture", "Picture must be a string").optional().isURL();
 
   const errors = req.validationErrors();
 
