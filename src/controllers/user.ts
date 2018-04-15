@@ -206,7 +206,7 @@ export let deletePayment = (req: Request, res: Response, next: NextFunction) => 
  * Find users that match name.
  */
 export let searchUser = (req: Request, res: Response, next: NextFunction) => {
-  req.assert("search", "Email must be an email").optional().isEmail();
+  req.assert("search", "Email must be an email").isEmail();
   User.findLike({
     name: `(?i).*${req.params.name}.*`,
     email: `(?i).*${req.params.name}.*`

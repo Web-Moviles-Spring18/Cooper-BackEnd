@@ -443,6 +443,9 @@ export let getUsersOverpaid = (req: Request, res: Response, next: NextFunction) 
  * Find pools that match name.
  */
 export let searchPool = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.params.name) {
+    res.status(400).send("No name provided.");
+  }
   Pool.findLike({ name: `(?i).*${req.params.name}.*` }, { private: false }, (err, pools) => {
     if (err) {
       return next(err);
