@@ -6,10 +6,13 @@ import { default as User, AuthToken, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { INode, Neo4jError, Relationship } from "neo4js";
+import * as imgur from "imgur";
 // import * as sgMail from "@sendgrid/mail";
 import * as Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_KEY);
 // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+imgur.setClientId(process.env.IMGUR_CLIENT_ID);
 
 /**
  * POST /login
@@ -274,15 +277,29 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
     user.name = req.body.name || user.name || "";
     user.gender = req.body.gender || user.gender || "";
     user.location = req.body.location || user.location || "";
-    user.save((err: Neo4jError) => {
-      if (process.env.NODE_ENV == "development") {
-        console.error(err);
-      }
-      if (err) {
-        return res.status(400).send("The email address you have entered is already associated with an account.");
-      }
-      res.status(200).send("Profile information has been updated.");
-    });
+    const saveUser = () => {
+      user.save((err: Neo4jError) => {
+        if (process.env.NODE_ENV == "development") {
+          console.error(err);
+        }
+        if (err) {
+          return res.status(400).send("The email address you have entered is already associated with an account.");
+        }
+        res.status(200).send("Profile information has been updated.");
+      });
+    };
+
+    if (req.body.image) {
+      imgur.uploadBase64(req.body.image).then((res: any) => {
+        user.image = res.data.link;
+        saveUser();
+      }).catch((err: Error) => {
+        console.error(err.message);
+        res.status(500).send("There was en error uploading the image.");
+      });
+    } else {
+      saveUser();
+    }
   });
 };
 
