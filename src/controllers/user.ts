@@ -262,7 +262,9 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
     req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
   }
 
-  req.assert("gender", "Please enter 'Male' or 'Female'").isIn(["Male", "Female"]);
+  req.assert("pictureURL", "PictureURL should be an URL").optional().isURL();
+  req.assert("picture", "Picture should be a Base 64 string").optional().isBase64();
+  req.assert("gender", "Please enter 'Male' or 'Female'").optional().isIn(["Male", "Female"]);
   const errors = req.validationErrors();
 
   if (errors) {
@@ -289,15 +291,18 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
       });
     };
 
-    if (req.body.image) {
-      imgur.uploadBase64(req.body.image).then((res: any) => {
-        user.image = res.data.link;
+    if (req.body.picture) {
+      imgur.uploadBase64(req.body.picture).then((res: any) => {
+        user.picture = res.data.link;
         saveUser();
       }).catch((err: Error) => {
         console.error(err.message);
         res.status(500).send("There was en error uploading the image.");
       });
     } else {
+      if (req.body.pictureURL) {
+        user.picture = req.body.pictureURL;
+      }
       saveUser();
     }
   });
