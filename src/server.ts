@@ -4,8 +4,8 @@ import * as https from "https";
 
 const app = require("./app");
 const options = {
-  key: fs.readFileSync("keys/agent2-key.pem"),
-  cert: fs.readFileSync("keys/agent2-cert.crt")
+  key: fs.readFileSync(process.env.SSL_KEY),
+  cert: fs.readFileSync(process.env.SSL_CERT)
 };
 
 /**
