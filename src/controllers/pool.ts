@@ -4,6 +4,8 @@ import { Request, Response, NextFunction } from "express";
 import * as request from "express-validator";
 import { INode, Relationship } from "neo4js";
 import { processPayment } from "../lib/payment";
+const imgur: any = require("imgur");
+imgur.setClientId(process.env.IMGUR_CLIENT_ID);
 
 /**
  * POST /pool
@@ -18,6 +20,8 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
   req.assert("starts", "Starts must be a date").optional().toDate();
   req.assert("total", "Total must be a number").isFloat();
   req.assert("currency", "Currency must be one of usd or mxn").isIn(["usd", "mxn"]);
+  req.assert("picture", "Picture must be a base 64 string").optional().isBase64();
+  req.assert("pictureURL", "PictureURL must be an URL").optional().isURL();
 
   const errors = req.validationErrors();
 
@@ -41,25 +45,42 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
     pool.starts = req.body.starts;
   }
 
-  pool.save((err: Error) => {
-    if (err) {
-      return next(err);
-    }
-    req.user.owns(pool).then(() => {
-      req.user.participatesIn(pool, { debt: pool.total }).then(() => {
-        delete pool.label;
-        res.status(200).send({
-          message: "Pool created!",
-          pool
+  const savePool = () => {
+    pool.save((err: Error) => {
+      if (err) {
+        return next(err);
+      }
+      req.user.owns(pool).then(() => {
+        req.user.participatesIn(pool, { debt: pool.total }).then(() => {
+          delete pool.label;
+          res.status(200).send({
+            message: "Pool created!",
+            pool
+          });
+        }).catch((err: Error) => {
+          console.error(err);
+          res.status(500).send("Something went wrong.");
         });
       }).catch((err: Error) => {
-        console.error(err);
-        res.status(500).send("Something went wrong.");
+        res.status(400).send(err.message);
       });
-    }).catch((err: Error) => {
-      res.status(400).send(err.message);
     });
-  });
+  };
+
+  if (req.body.picture) {
+    imgur.uploadBase64(req.body.picture).then((res: any) => {
+      pool.picture = res.data.link;
+      savePool();
+    }).catch((err: Error) => {
+      console.error(err.message);
+      res.status(500).send("There was en error uploading the image.");
+    });
+  } else {
+    if (req.body.pictureURL) {
+      pool.picture = req.body.pictureURL;
+    }
+    savePool();
+  }
 };
 
 /**
@@ -443,6 +464,9 @@ export let getUsersOverpaid = (req: Request, res: Response, next: NextFunction) 
  * Find pools that match name.
  */
 export let searchPool = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.params.name) {
+    res.status(400).send("No name provided.");
+  }
   Pool.findLike({ name: `(?i).*${req.params.name}.*` }, { private: false }, (err, pools) => {
     if (err) {
       return next(err);

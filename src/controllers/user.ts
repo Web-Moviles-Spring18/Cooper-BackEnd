@@ -6,10 +6,14 @@ import { default as User, AuthToken, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { INode, Neo4jError, Relationship } from "neo4js";
+const imgur: any = require("imgur");
+
 // import * as sgMail from "@sendgrid/mail";
 import * as Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_KEY);
 // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+imgur.setClientId(process.env.IMGUR_CLIENT_ID);
 
 /**
  * POST /login
@@ -66,10 +70,11 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
 
   // optional
-  req.assert("name", "Name must be a string").optional().isAlphanumeric();
-  req.assert("gender", "Gender must be a string").optional().isAlphanumeric();
+  req.assert("name", "Name must be a string").optional().isAscii();
+  req.assert("gender", "Gender must be a string").optional().isIn(["Male", "Female"]);
   req.assert("location", "Location must be a string").optional().isAlphanumeric();
-  req.assert("picture", "Picture must be a string").optional().isAlphanumeric();
+  req.assert("pictureURL", "PictureURL should be an URL").optional().isURL();
+  req.assert("picture", "Picture should be a Base 64 string").optional().isBase64();
 
   const errors = req.validationErrors();
 
@@ -91,9 +96,6 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   if (req.body.location) {
     user.location = req.body.location;
   }
-  if (req.body.picture) {
-    user.picture = req.body.picture;
-  }
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { next(err); }
@@ -108,17 +110,33 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
       bcrypt.hash(<string>user.password, salt, undefined, (err: Error, hash: string) => {
         if (err) { return next(err); }
         user.password = hash;
-        user.save((err: Error) => {
-          if (err) {
-            return next(err);
-          }
-          req.logIn(user, (err: Error) => {
+        const saveUser = () => {
+          user.save((err: Error) => {
             if (err) {
               return next(err);
             }
-            res.status(201).send("Success! User registered.");
+            req.logIn(user, (err: Error) => {
+              if (err) {
+                return next(err);
+              }
+              res.status(201).send("Success! User registered.");
+            });
           });
-        });
+        };
+        if (req.body.picture) {
+          imgur.uploadBase64(req.body.picture).then((res: any) => {
+            user.picture = res.data.link;
+            saveUser();
+          }).catch((err: Error) => {
+            console.error(err.message);
+            res.status(500).send("There was en error uploading the image.");
+          });
+        } else {
+          if (req.body.pictureURL) {
+            user.picture = req.body.pictureURL;
+          }
+          saveUser();
+        }
       });
     });
   });
@@ -206,7 +224,7 @@ export let deletePayment = (req: Request, res: Response, next: NextFunction) => 
  * Find users that match name.
  */
 export let searchUser = (req: Request, res: Response, next: NextFunction) => {
-  req.assert("search", "Email must be an email").optional().isEmail();
+  req.assert("search", "Email must be an email").isEmail();
   User.findLike({
     name: `(?i).*${req.params.name}.*`,
     email: `(?i).*${req.params.name}.*`
@@ -259,7 +277,9 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
     req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
   }
 
-  req.assert("gender", "Please enter 'Male' or 'Female'").isIn(["Male", "Female"]);
+  req.assert("pictureURL", "PictureURL should be an URL").optional().isURL();
+  req.assert("picture", "Picture should be a Base 64 string").optional().isBase64();
+  req.assert("gender", "Please enter 'Male' or 'Female'").optional().isIn(["Male", "Female"]);
   const errors = req.validationErrors();
 
   if (errors) {
@@ -274,15 +294,32 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
     user.name = req.body.name || user.name || "";
     user.gender = req.body.gender || user.gender || "";
     user.location = req.body.location || user.location || "";
-    user.save((err: Neo4jError) => {
-      if (process.env.NODE_ENV == "development") {
-        console.error(err);
+    const saveUser = () => {
+      user.save((err: Neo4jError) => {
+        if (process.env.NODE_ENV == "development") {
+          console.error(err);
+        }
+        if (err) {
+          return res.status(400).send("The email address you have entered is already associated with an account.");
+        }
+        res.status(200).send("Profile information has been updated.");
+      });
+    };
+
+    if (req.body.picture) {
+      imgur.uploadBase64(req.body.picture).then((res: any) => {
+        user.picture = res.data.link;
+        saveUser();
+      }).catch((err: Error) => {
+        console.error(err.message);
+        res.status(500).send("There was en error uploading the image.");
+      });
+    } else {
+      if (req.body.pictureURL) {
+        user.picture = req.body.pictureURL;
       }
-      if (err) {
-        return res.status(400).send("The email address you have entered is already associated with an account.");
-      }
-      res.status(200).send("Profile information has been updated.");
-    });
+      saveUser();
+    }
   });
 };
 
