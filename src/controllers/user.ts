@@ -6,7 +6,8 @@ import { default as User, AuthToken, UserType } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { INode, Neo4jError, Relationship } from "neo4js";
-import * as imgur from "imgur";
+const imgur: any = require("imgur");
+
 // import * as sgMail from "@sendgrid/mail";
 import * as Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_KEY);
@@ -72,7 +73,8 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   req.assert("name", "Name must be a string").optional().isAscii();
   req.assert("gender", "Gender must be a string").optional().isIn(["Male", "Female"]);
   req.assert("location", "Location must be a string").optional().isAlphanumeric();
-  req.assert("picture", "Picture must be a string").optional().isURL();
+  req.assert("pictureURL", "PictureURL should be an URL").optional().isURL();
+  req.assert("picture", "Picture should be a Base 64 string").optional().isBase64();
 
   const errors = req.validationErrors();
 
@@ -94,9 +96,6 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   if (req.body.location) {
     user.location = req.body.location;
   }
-  if (req.body.picture) {
-    user.picture = req.body.picture;
-  }
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { next(err); }
@@ -111,17 +110,33 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
       bcrypt.hash(<string>user.password, salt, undefined, (err: Error, hash: string) => {
         if (err) { return next(err); }
         user.password = hash;
-        user.save((err: Error) => {
-          if (err) {
-            return next(err);
-          }
-          req.logIn(user, (err: Error) => {
+        const saveUser = () => {
+          user.save((err: Error) => {
             if (err) {
               return next(err);
             }
-            res.status(201).send("Success! User registered.");
+            req.logIn(user, (err: Error) => {
+              if (err) {
+                return next(err);
+              }
+              res.status(201).send("Success! User registered.");
+            });
           });
-        });
+        };
+        if (req.body.picture) {
+          imgur.uploadBase64(req.body.picture).then((res: any) => {
+            user.picture = res.data.link;
+            saveUser();
+          }).catch((err: Error) => {
+            console.error(err.message);
+            res.status(500).send("There was en error uploading the image.");
+          });
+        } else {
+          if (req.body.pictureURL) {
+            user.picture = req.body.pictureURL;
+          }
+          saveUser();
+        }
       });
     });
   });
