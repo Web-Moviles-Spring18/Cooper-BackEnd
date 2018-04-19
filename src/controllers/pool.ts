@@ -4,6 +4,8 @@ import { Request, Response, NextFunction } from "express";
 import * as request from "express-validator";
 import { INode, Relationship } from "neo4js";
 import { processPayment } from "../lib/payment";
+
+import * as sgMail from "@sendgrid/mail";
 const imgur: any = require("imgur");
 imgur.setClientId(process.env.IMGUR_CLIENT_ID);
 
@@ -190,7 +192,20 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
             if (process.env.NODE_ENV === "development") {
               console.log(result);
             }
-            res.status(200).send("Invitation sent!");
+            const msg = {
+              to: user.email,
+              from: "service@cooper.com",
+              subject: `${req.user.name || req.user.email} invited you to join a pool.`,
+              text: `Hello!\n\n${req.user.name || req.user.email} just invited you to join his ${pool.name} pool!\n` +
+                    `You can join it clicking here: ${process.env.HOST_URI}/pool/accept/${pool.id}.` +
+                    `Or you can decline it clicking here: ${process.env.HOST_URI}/pool/decline/${pool.id}.`
+            };
+            sgMail.send(msg, false, (err: Error) => {
+              if (err) {
+                next(err);
+                res.status(200).send("Invitation sent!");
+              }
+            });
           });
         });
       });

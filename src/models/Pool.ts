@@ -3,8 +3,8 @@ import { Schema, model } from "../lib/neo4js";
 import { INode } from "neo4js";
 import { UserType } from "./User";
 import * as crypto from "crypto";
-// import * as sgMail from "@sendgrid/mail";
-// sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+import * as sgMail from "@sendgrid/mail";
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 export type PoolType = INode & {
   name: string,
@@ -78,8 +78,6 @@ poolSchema.pre("save", function createInvite(next: Function) {
   });
 });
 
-// TODO: Implement Stripe.
-// TODO: Define split methods.
 // TODO: Update debts when new user joins.
 poolSchema.methods.inviteUser = function(from: UserType, user: UserType, cb: (err: Error, result: any) => void) {
   const pool: PoolType = this;
@@ -91,9 +89,9 @@ poolSchema.methods.inviteUser = function(from: UserType, user: UserType, cb: (er
     from: "service@cooper.mx",
     text: `Hello,\n\n${displayName} just invited you to join his pool. \n\n` +
     `If you want to join, please click the following link:\n` +
-    `http://${process.env.HOST_URI}/join/${pool.invite}.`
+    `http://${process.env.HOST_URI}/pool/accept/${pool._id}`
   };
-  // sgMail.send(msg, false, cb);
+  sgMail.send(msg, false, cb);
   cb(undefined, undefined);
 };
 
