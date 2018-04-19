@@ -55,8 +55,8 @@ app.set("port", process.env.PORT || 3000);
 app.set("securePort", process.env.SECURE_PORT || 3443);
 app.use(compression());
 app.use(logger("dev"));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 app.use(expressValidator());
 
 const redisPort = process.env.REDIS_PORT;
