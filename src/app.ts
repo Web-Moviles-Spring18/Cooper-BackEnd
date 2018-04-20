@@ -20,7 +20,7 @@ dotenv.config();
 const RedisStore = redis(session);
 const host = process.env.HOST || "localhost";
 const neo4jPort = process.env.NEO4J_PORT || "7474";
-const dbPath = `cooper_${process.env.NODE_ENV}`;
+const dbPath = `cooper_${process.env.NODE_ENV || "test"}`;
 neo.connect({ host, port: neo4jPort, dbPath }, {
   user: process.env.NEO4J_USER || "neo4j",
   password: process.env.NEO4J_PASSWORD || "neo4j",
@@ -59,12 +59,12 @@ app.use(bodyParser.json({ limit: "5mb" }));
 app.use(bodyParser.urlencoded({ limit: "5mb", extended: true }));
 app.use(expressValidator());
 
-const redisPort = process.env.REDIS_PORT;
+const redisPort = process.env.REDIS_PORT || 6379;
 app.use(session({
   name: "cooper.sid",
   resave: false,
   saveUninitialized: true,
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || "redis-store-secret",
   store: new RedisStore({ host, port: redisPort })
 }));
 app.use(passport.initialize());
