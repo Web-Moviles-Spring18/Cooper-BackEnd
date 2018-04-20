@@ -22,8 +22,8 @@ const host = process.env.HOST || "localhost";
 const neo4jPort = process.env.NEO4J_PORT || "7474";
 const dbPath = `cooper_${process.env.NODE_ENV}`;
 neo.connect({ host, port: neo4jPort, dbPath }, {
-  user: process.env.NEO4J_USER,
-  password: process.env.NEO4J_PASSWORD,
+  user: process.env.NEO4J_USER || "neo4j",
+  password: process.env.NEO4J_PASSWORD || "neo4j",
 });
 
 // Controllers (route handlers)
