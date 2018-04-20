@@ -1,7 +1,6 @@
 import * as request from "supertest";
 import * as app from "../src/app";
 import * as chai from "chai";
-import * as mocha from "mocha";
 import { default as User } from "../src/models/User";
 
 process.env.NODE_ENV = "test";
@@ -15,82 +14,24 @@ const newUserCredentials = {
   confirmPassword: "contraseña"
 };
 
-const userCredentials = {
-  email: "hermes.espinola@gmail.com",
-  password: "contraseña"
-};
-
-const authenticatedUser = request.agent(app);
+const agent = request.agent(app);
 beforeAll((done) => {
-  authenticatedUser
+  agent
     .post("/login")
     .send({ email: "hermes.espinola@gmail.com", password: "contraseña" })
-    .end(function (err, res) {
-      console.log(res.status);
+    .end((err, res) => {
       done();
     });
 });
 
 describe("POST /signup", () => {
-  it("should be able to sign-up", (done) => {
-    return request(app).post("/signup")
-    .send(newUserCredentials)
-    .end(function(err, res) {
-      // console.log(res.error);
-      expect(res.status).to.equal(201);
-      done();
-    });
-  });
-});
-
-// Test de Login con datos incorrectos
-describe("POST /login", () => {
-  it("should return some defined error message with valid parameters", (done) => {
-    return request(app).post("/login")
-      .field("email", "john@me.com")
-      .field("password", "Hunter2")
-      .expect(400)
-      .end(function(err, res) {
-        expect(res.error).not.to.be.undefined;
-        // console.log(res.error);
-        done();
-      });
-  });
-});
-
-// Login con datos correctos
-describe("POST /login", () => {
-  it("Should return 200", (done) => {
-    return request(app).post("/login")
-      .send(userCredentials)
-      .expect(200)
-      .end(function(err, res) {
-        expect(res.status).to.equal(200);
-        // console.log(res.status);
-        done();
-      });
-  });
-});
-
-// Login con datos correctos
-describe("POST /login", () => {
-  it("Should return 200", (done) => {
-    return request(app).post("/login")
-      .send(newUserCredentials)
-      .expect(200)
-      .end(function(err, res) {
-        expect(res.status).to.equal(200);
-        done();
-      });
-  });
-
   it("Should return an error in the creation due to password being too small.", (done) => {
     return request(app).post("/signup")
       .field("email", "example2@gmail.com")
       .field("password", "123")
       .field("confirmPassword", "123")
       .expect(400)
-      .end(function (err, res) {
+      .end((err, res) => {
         expect(res.error).not.to.be.undefined;
         done();
       });
@@ -100,7 +41,7 @@ describe("POST /login", () => {
     return request(app).post("/signup")
       .send(newUserCredentials)
       .expect(400)
-      .end(function (err, res) {
+      .end((err, res) => {
         expect(res.error).not.to.be.undefined;
         done();
       });
@@ -112,7 +53,7 @@ describe("POST /login", () => {
       .field("password", "password")
       .field("confirmPassword", "different")
       .expect(400)
-      .end(function (err, res) {
+      .end((err, res) => {
         expect(res.error).not.to.be.undefined;
         done();
       });
@@ -124,29 +65,66 @@ describe("POST /login", () => {
       .field("password", "password")
       .field("confirmPassword", "password")
       .expect(400)
-      .end(function (err, res) {
+      .end((err, res) => {
         expect(res.error).not.to.be.undefined;
         done();
       });
+    });
 
-describe("GET /account", () => {
-  it("should return a 200 response if the user is logged in", function(done) {
-    authenticatedUser.get("/account")
-    .expect(200, done);
+  it("should be able to sign-up", (done) => {
+    return request(app).post("/signup")
+    .send(newUserCredentials)
+    .expect(201)
+    .end((err, res) => {
+      done();
+    });
   });
-  it("should return a 401 response Unauthorized", function(done) {
-    request(app).get("/account")
-    .expect(401, done);
+});
+
+let sessionCookie: string;
+
+// Test de Login con datos incorrectos
+describe("POST /login", () => {
+  it("should return some defined error message with valid parameters", (done) => {
+    return request(app).post("/login")
+      .field("email", "john@me.com")
+      .field("password", "Hunter2")
+      .expect(400)
+      .end((err, res) => {
+        expect(res.error).not.to.be.undefined;
+        done();
+      });
+  });
+
+  // Login con datos correctos
+  it("Should return 200", (done) => {
+    return request(app).post("/login")
+      .send(newUserCredentials)
+      .expect(200)
+      .end((err, res) => {
+        expect(res.status).to.equal(200);
+        expect(res.header["set-cookie"][0]).to.be.a.string;
+        sessionCookie = res.header["set-cookie"][0];
+        done();
+      });
   });
 });
 
 describe("GET /account", () => {
   it("should return a 200 response if the user is logged in", function(done) {
-    authenticatedUser.get("/account")
+    agent.get("/account").set("Cookie", sessionCookie)
     .expect(200, done);
   });
-  it("should return a 401 response Unauthorized", function(done) {
+
+  it("should return Unauthorized if no session cookie is present", function(done) {
     request(app).get("/account")
     .expect(401, done);
+  });
+});
+
+describe("GET /account/delete", () => {
+  it("should delete the account and return OK", (done) => {
+    request(app).get("/account/delete").set("Cookie", sessionCookie)
+    .expect(200, done);
   });
 });
