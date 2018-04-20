@@ -1,6 +1,9 @@
 language: node_js
 node_js:
   - 9.10.1
+services:
+  - neo4j
+  - redis-server
 notifications:
   email:
     on_failure: change
@@ -26,6 +29,7 @@ before_script:
   - chmod 600 deploy && mv deploy ~/.ssh/id_rsa
 script:
   - npm run build
+  - npm run test
 deploy:
   skip_cleanup: true
   provider: script
