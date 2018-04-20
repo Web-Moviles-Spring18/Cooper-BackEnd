@@ -15,6 +15,7 @@ branches:
   only:
     - master
     - Development
+    - Testing
 env:
   global:
     - REMOTE_APP_DIR=/var/www/cooper.mx/
