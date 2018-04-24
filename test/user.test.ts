@@ -14,10 +14,8 @@ const newUserCredentials = {
   confirmPassword: "contraseña"
 };
 
-const agent = request.agent(app);
 beforeAll((done) => {
-  agent
-    .post("/login")
+  request(app).post("/login")
     .send({ email: "hermes.espinola@gmail.com", password: "contraseña" })
     .end((err, res) => {
       done();
@@ -82,6 +80,7 @@ describe("POST /signup", () => {
 });
 
 let sessionCookie: string;
+let profile: { [key: string]: any };
 
 // Test de Login con datos incorrectos
 describe("POST /login", () => {
@@ -111,12 +110,16 @@ describe("POST /login", () => {
 });
 
 describe("GET /account", () => {
-  it("should return a 200 response if the user is logged in", function(done) {
-    agent.get("/account").set("Cookie", sessionCookie)
-    .expect(200, done);
+  it("should return a 200 response if the user is logged in", (done) => {
+    request(app).get("/account").set("Cookie", sessionCookie)
+    .expect(200)
+    .end((err, res) => {
+      profile = res.body;
+      done();
+    });
   });
 
-  it("should return Unauthorized if no session cookie is present", function(done) {
+  it("should return Unauthorized if no session cookie is present", (done) => {
     request(app).get("/account")
     .expect(401, done);
   });
