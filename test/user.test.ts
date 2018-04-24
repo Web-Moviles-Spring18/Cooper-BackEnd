@@ -11,7 +11,8 @@ const assert = chai.assert;
 const newUserCredentials = {
   email: "sergio.profe@gmail.com",
   password: "contraseña",
-  confirmPassword: "contraseña"
+  confirmPassword: "contraseña",
+  name: "jesucrito"
 };
 
 beforeAll((done) => {
@@ -122,6 +123,43 @@ describe("GET /account", () => {
   it("should return Unauthorized if no session cookie is present", (done) => {
     request(app).get("/account")
     .expect(401, done);
+  });
+});
+
+describe(`GET /user/search/${newUserCredentials.name}`, () => {
+  let userId: number;
+  it(`should return the user ${newUserCredentials.name}`, (done) => {
+    request(app).get(`/user/search/${newUserCredentials.name}`)
+    .expect(200)
+    .end((err, res) => {
+      assert(Array.isArray(res.body), "body must be an array");
+      expect(res.body[0].email).to.be.eq(newUserCredentials.email);
+      expect(res.body[0].name).to.be.eq(newUserCredentials.name);
+      userId = res.body[0]._id;
+      done();
+    });
+  });
+
+  it(`should return the user ${newUserCredentials.name}`, (done) => {
+    request(app).get(`/user/search/${newUserCredentials.email}`)
+    .expect(200)
+    .end((err, res) => {
+      assert(Array.isArray(res.body), "body must be an array");
+      expect(res.body[0].email).to.be.eq(newUserCredentials.email);
+      expect(res.body[0].name).to.be.eq(newUserCredentials.name);
+      expect(res.body[0]._id).to.be.eq(userId);
+      done();
+    });
+  });
+
+  it(`should return an empty list`, (done) => {
+    request(app).get("/user/search/random_string")
+    .expect(200)
+    .end((err, res) => {
+      assert(Array.isArray(res.body), "body must be an array");
+      assert(res.body.length === 0, "body should be an empty array");
+      done();
+    });
   });
 });
 
