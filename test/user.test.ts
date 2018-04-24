@@ -126,13 +126,17 @@ describe("GET /account", () => {
   });
 });
 
-describe(`GET /user/search/${newUserCredentials.name}`, () => {
+describe(`GET /user/search/:name`, () => {
   let userId: number;
+
   it(`should return the user ${newUserCredentials.name}`, (done) => {
     request(app).get(`/user/search/${newUserCredentials.name}`)
     .expect(200)
     .end((err, res) => {
       assert(Array.isArray(res.body), "body must be an array");
+      expect(res.body[0]).to.haveOwnProperty("email");
+      expect(res.body[0]).to.haveOwnProperty("name");
+      expect(res.body[0]).to.haveOwnProperty("_id");
       expect(res.body[0].email).to.be.eq(newUserCredentials.email);
       expect(res.body[0].name).to.be.eq(newUserCredentials.name);
       userId = res.body[0]._id;
@@ -140,11 +144,14 @@ describe(`GET /user/search/${newUserCredentials.name}`, () => {
     });
   });
 
-  it(`should return the user ${newUserCredentials.name}`, (done) => {
+  it(`should return the user ${newUserCredentials.email}`, (done) => {
     request(app).get(`/user/search/${newUserCredentials.email}`)
     .expect(200)
     .end((err, res) => {
       assert(Array.isArray(res.body), "body must be an array");
+      expect(res.body[0]).to.haveOwnProperty("email");
+      expect(res.body[0]).to.haveOwnProperty("name");
+      expect(res.body[0]).to.haveOwnProperty("_id");
       expect(res.body[0].email).to.be.eq(newUserCredentials.email);
       expect(res.body[0].name).to.be.eq(newUserCredentials.name);
       expect(res.body[0]._id).to.be.eq(userId);
@@ -159,6 +166,17 @@ describe(`GET /user/search/${newUserCredentials.name}`, () => {
       assert(Array.isArray(res.body), "body must be an array");
       assert(res.body.length === 0, "body should be an empty array");
       done();
+    });
+  });
+
+  describe("GET /user/:id", () => {
+    it(`should return 404 NOT FOUND`, (done) => {
+      request(app).get("/user/-1")
+      .expect(400)
+      .end((err, res) => {
+        expect(res.body).to.be.empty;
+        done();
+      });
     });
   });
 });
