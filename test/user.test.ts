@@ -211,7 +211,6 @@ describe(`GET /user/:id`, () => {
     .set('Cookie', sessionCookie)
     .expect(200)
     .end((err, res) => {
-      console.log(friendProfile);
       expect(res.body).not.to.be.empty;
       expect(res.body.name).not.to.be.undefined;
       expect(res.body._id).not.to.be.undefined;
@@ -304,10 +303,38 @@ describe("Friends", () => {
   });
 });
 
+describe("POST /forgot", () => {
+  it("should return 200 OK with correct email", (done) => {
+    request(app).post("/forgot")
+    .send({ email: newUserCredentials.email })
+    .expect(200, done);
+  });
+
+  it("should return 200 OK with incorrect email", (done) => {
+    request(app).post("/forgot")
+    .send({ email: "some-random-email@abc.xyz" })
+    .expect(200, done);
+  });
+
+  it("should not accept non-email and return 400", (done) => {
+    request(app).post("/forgot")
+    .send({ email: "some-random-email" })
+    .expect(400)
+    .end((err, res) => {
+      expect(res.error).not.to.be.undefined;
+      done();
+    });
+  });
+});
+
 describe("GET /account/delete", () => {
   it("should delete the account and return OK", (done) => {
     request(app).get("/account/delete")
     .set("Cookie", sessionCookie)
+    .expect(200, done);
+
+    request(app).get("/account/delete")
+    .set("Cookie", friendCookie)
     .expect(200, done);
   });
 });
