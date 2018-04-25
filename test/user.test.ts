@@ -8,6 +8,15 @@ process.env.NODE_ENV = "test";
 const expect = chai.expect;
 const assert = chai.assert;
 
+let friendCookie: string;
+
+const friendCredentials = {
+  email: "test_friend@gmail.com",
+  password: "contraseña",
+  confirmPassword: "contraseña",
+  name: "Friend"
+};
+
 const newUserCredentials = {
   email: "sergio.profe@gmail.com",
   password: "contraseña",
@@ -16,16 +25,24 @@ const newUserCredentials = {
 };
 
 beforeAll((done) => {
-  request(app).post("/login")
-    .send({ email: "hermes.espinola@gmail.com", password: "contraseña" })
+  request(app).post("/signup")
+    .send(friendCredentials)
     .end((err, res) => {
-      done();
+      request(app).post("/login")
+        .send(friendCredentials)
+        .end((err, res) => {
+          expect(res.header["set-cookie"]).not.to.be.undefined;
+          assert(Array.isArray(res.header["set-cookie"]) && res.header["set-cookie"].length > 0,
+                  "'set-cookie' header should be a non empty list");
+          friendCookie = res.header["set-cookie"][0];
+          done();
+        });
     });
 });
 
 describe("POST /signup", () => {
   it("Should return an error in the creation due to password being too small.", (done) => {
-    return request(app).post("/signup")
+    request(app).post("/signup")
       .field("email", "example2@gmail.com")
       .field("password", "123")
       .field("confirmPassword", "123")
@@ -37,7 +54,7 @@ describe("POST /signup", () => {
   });
 
   it("Should return an error in the creation due to account already existing.", (done) => {
-    return request(app).post("/signup")
+    request(app).post("/signup")
       .send(newUserCredentials)
       .expect(400)
       .end((err, res) => {
@@ -47,7 +64,7 @@ describe("POST /signup", () => {
   });
 
   it("Should return an error in the creation due to passwords not matching.", (done) => {
-    return request(app).post("/signup")
+    request(app).post("/signup")
       .field("email", "example3@gmail.com")
       .field("password", "password")
       .field("confirmPassword", "different")
@@ -59,7 +76,7 @@ describe("POST /signup", () => {
   });
 
   it("Should return an error due to the email being invalid", (done) => {
-    return request(app).post("/signup")
+    request(app).post("/signup")
       .field("email", "bademail.com")
       .field("password", "password")
       .field("confirmPassword", "password")
@@ -71,7 +88,7 @@ describe("POST /signup", () => {
     });
 
   it("should be able to sign-up", (done) => {
-    return request(app).post("/signup")
+    request(app).post("/signup")
     .send(newUserCredentials)
     .expect(201)
     .end((err, res) => {
@@ -86,7 +103,7 @@ let profile: { [key: string]: any };
 // Test de Login con datos incorrectos
 describe("POST /login", () => {
   it("should return some defined error message with valid parameters", (done) => {
-    return request(app).post("/login")
+    request(app).post("/login")
       .field("email", "john@me.com")
       .field("password", "Hunter2")
       .expect(400)
@@ -98,12 +115,14 @@ describe("POST /login", () => {
 
   // Login con datos correctos
   it("Should return 200", (done) => {
-    return request(app).post("/login")
+    request(app).post("/login")
       .send(newUserCredentials)
       .expect(200)
       .end((err, res) => {
         expect(res.status).to.equal(200);
-        expect(res.header["set-cookie"][0]).to.be.a.string;
+        expect(res.header["set-cookie"]).not.to.be.undefined;
+        assert(Array.isArray(res.header["set-cookie"]) && res.header["set-cookie"].length > 0,
+                "'set-cookie' header should be a non empty list");
         sessionCookie = res.header["set-cookie"][0];
         done();
       });
