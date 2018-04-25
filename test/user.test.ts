@@ -9,6 +9,7 @@ const expect = chai.expect;
 const assert = chai.assert;
 
 let friendCookie: string;
+let friendProfile: {[key: string]: string};
 
 const friendCredentials = {
   email: "test_friend@gmail.com",
@@ -35,7 +36,13 @@ beforeAll((done) => {
           assert(Array.isArray(res.header["set-cookie"]) && res.header["set-cookie"].length > 0,
                   "'set-cookie' header should be a non empty list");
           friendCookie = res.header["set-cookie"][0];
-          done();
+          request(app).get("/account")
+            .set("Cookie", friendCookie)
+            .expect(200)
+            .end((err, res) => {
+              friendProfile = res.body;
+              done();
+            });
         });
     });
 });
@@ -98,7 +105,7 @@ describe("POST /signup", () => {
 });
 
 let sessionCookie: string;
-let profile: { [key: string]: any };
+let profile: {[key: string]: any};
 
 // Test de Login con datos incorrectos
 describe("POST /login", () => {
@@ -187,22 +194,120 @@ describe(`GET /user/search/:name`, () => {
       done();
     });
   });
+});
 
-  describe("GET /user/:id", () => {
-    it(`should return 404 NOT FOUND`, (done) => {
-      request(app).get("/user/-1")
-      .expect(400)
-      .end((err, res) => {
-        expect(res.body).to.be.empty;
-        done();
-      });
+describe(`GET /user/:id`, () => {
+  it(`should return 404 NOT FOUND`, (done) => {
+    request(app).get("/user/-1")
+    .expect(400)
+    .end((err, res) => {
+      expect(res.body).to.be.empty;
+      done();
+    });
+  });
+
+  it(`should return the user ${friendCredentials.name}`, (done) => {
+    request(app).get(`/user/${friendProfile._id}`)
+    .set('Cookie', sessionCookie)
+    .expect(200)
+    .end((err, res) => {
+      console.log(friendProfile);
+      expect(res.body).not.to.be.empty;
+      expect(res.body.name).not.to.be.undefined;
+      expect(res.body._id).not.to.be.undefined;
+      expect(res.body.email).not.to.be.undefined;
+      done();
+    });
+  });
+});
+
+describe("Friends", () => {
+  it("GET /profile/friends should return an empty array", (done) => {
+    request(app).get("/profile/friends")
+    .set("Cookie", sessionCookie)
+    .expect(200)
+    .end((err, res) => {
+      assert(Array.isArray(res.body), "body must be an array");
+      expect(res.body.length).to.be.eq(0);
+      done();
+    });
+  });
+
+  it("GET /profile/friends/requests should return an empty array", (done) => {
+    request(app).get("/profile/friends/requests")
+    .set("Cookie", sessionCookie)
+    .expect(200)
+    .end((err, res) => {
+      assert(Array.isArray(res.body), "body must be an array");
+      expect(res.body.length).to.be.eq(0);
+      done();
+    });
+  });
+
+  it("GET /friend/request/-1", (done) => {
+    request(app).get("/friend/request/-1")
+    .set("Cookie", sessionCookie)
+    .expect(404, done);
+  });
+
+  it("GET /friend/request/:id should return 200 OK", (done) => {
+    request(app).get(`/friend/request/${friendProfile._id}`)
+    .set("Cookie", sessionCookie)
+    .expect(200, done);
+  });
+
+  it(`GET /profile/friends/requests of user ${friendCredentials.name} should not be empty and contain ${newUserCredentials.name}`, (done) => {
+    request(app).get("/profile/friends/requests")
+    .set("Cookie", friendCookie)
+    .expect(200)
+    .end((err, res) => {
+      assert(Array.isArray(res.body), "body must be an array");
+      assert(res.body.length === 1, "body must be an empty array");
+      expect(res.body[0]).not.to.be.empty;
+      expect(res.body[0].email).to.be.eq(newUserCredentials.email);
+      done();
+    });
+  });
+
+  it("GET /friend/accept/:id should return 200 OK", (done) => {
+    request(app).get("/profile/friends/requests")
+    .set("Cookie", friendCookie)
+    .expect(200)
+    .end((err, res) => {
+      assert(Array.isArray(res.body), "body must be an array");
+      assert(res.body.length === 1, "body must be an empty array");
+      expect(res.body[0]).not.to.be.empty;
+      expect(res.body[0].email).to.be.eq(newUserCredentials.email);
+      const userId = res.body[0]._id;
+      request(app).get(`/friend/accept/${userId}`)
+      .set("Cookie", friendCookie)
+      .expect(200, done);
+    });
+  });
+
+  it("GET /friend/accept/-1 should return 200 OK", (done) => {
+    request(app).get(`/friend/accept/-1`)
+    .set("Cookie", friendCookie)
+    .expect(404, done);
+  });
+
+  it("GET /profile/friends should return an array with one element", (done) => {
+    request(app).get("/profile/friends")
+    .set("Cookie", sessionCookie)
+    .expect(200)
+    .end((err, res) => {
+      expect(res.body.length).to.be.eq(1);
+      const friend = res.body[0];
+      expect(friend.email).to.be.eq(friendCredentials.email);
+      done();
     });
   });
 });
 
 describe("GET /account/delete", () => {
   it("should delete the account and return OK", (done) => {
-    request(app).get("/account/delete").set("Cookie", sessionCookie)
+    request(app).get("/account/delete")
+    .set("Cookie", sessionCookie)
     .expect(200, done);
   });
 });
