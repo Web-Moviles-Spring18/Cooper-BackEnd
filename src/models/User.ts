@@ -15,7 +15,7 @@ export type UserType = INode & {
   email: string,
   password: string,
   passwordResetToken?: string,
-  passwordResetExpires?: Date, // TODO: Fix dates bug
+  passwordResetExpires?: number
   tokens?: AuthToken[],
   facebook?: string,
   twitter?: string,
@@ -49,7 +49,7 @@ const userSchema = new Schema({
   },
   customer: String,
   passwordResetToken: String,
-  passwordResetExpires: Date,
+  passwordResetExpires: Number,
   tokens: String,
   facebook: String,
   twitter: String,

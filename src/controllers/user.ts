@@ -594,7 +594,7 @@ export let forgot = (req: Request, res: Response, next: NextFunction) => {
     function setRandomToken(token: AuthToken, done: Function) {
       User.findOne({ email: req.body.email }, (err, user: any) => {
         if (err) { return done(err); }
-        if (!user) { done(new Error("User not found")); }
+        if (!user) { return done(new Error("User not found")); }
         user.passwordResetToken = token;
         user.passwordResetExpires = Date.now() + 3600000; // 1 hour
         user.save((err: Error) => {

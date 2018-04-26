@@ -337,7 +337,7 @@ export const model = (label: string, schema: Schema) => {
       session.run(query).subscribe({
         onCompleted() {
           if (!found) {
-            next(undefined, undefined);
+            next(undefined, []);
           } else {
             next(undefined, nodes);
           }
@@ -373,7 +373,7 @@ export const model = (label: string, schema: Schema) => {
       session.run(query).subscribe({
         onCompleted() {
           if (!found) {
-            next(undefined, undefined);
+            next(undefined, []);
           } else {
             next(undefined, nodes);
           }
