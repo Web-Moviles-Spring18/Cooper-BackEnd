@@ -19,7 +19,7 @@ import * as cors from "cors";
 dotenv.config();
 const RedisStore = redis(session);
 const host = process.env.HOST || "localhost";
-const port = Number(process.env.NEO4J_PORT) || 7474;
+const port = Number(process.env.NEO4J_PORT) || 7687;
 const dbPath = `cooper_${process.env.NODE_ENV || "test"}`;
 neo.connect({ host, port, dbPath }, {
   user: process.env.NEO4J_USER || "neo4j",
