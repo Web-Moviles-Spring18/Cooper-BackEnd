@@ -115,6 +115,7 @@ app.post("/pool", auth.isAuthenticated, poolController.postPool);
 app.post("/pool/:id/invite", auth.isAuthenticated, poolController.postInvite);
 app.post("/pool/:id/pay", auth.isAuthenticated, poolController.postPayPool);
 app.post("/pool/:id", auth.isAuthenticated, poolController.postUpdateUserPool);
+app.delete("/pool/:id", auth.isAuthenticated, poolController.deletePool);
 app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 app.get("/pool/accept/:id", auth.isAuthenticated, poolController.getAcceptInvite);
 app.get("/pool/decline/:id", auth.isAuthenticated, poolController.getDeclineInvite);

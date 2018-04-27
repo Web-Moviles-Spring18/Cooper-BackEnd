@@ -356,6 +356,9 @@ export let postUpdatePassword = (req: Request, res: Response, next: NextFunction
  * Send friend request to the user with the given id.
  */
 export let getSendFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+  if (req.params.uid < 0) {
+    return res.status(400).send("Id cannot be < 0");
+  }
   User.findById(req.params.uid, (err, notYourFriend: UserType) => {
     if (err) {
       return next(err);
@@ -411,6 +414,9 @@ export let getFriends = (req: Request, res: Response, next: NextFunction) => {
  * Accept a friend request.
  */
 export let getAcceptFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+  if (req.params.uid < 0) {
+    return res.status(400).send("Id cannot be < 0");
+  }
   User.findById(req.params.uid, (err, user: UserType) => {
     if (err) {
       return next(err);
@@ -438,6 +444,9 @@ export let getAcceptFriendRequest = (req: Request, res: Response, next: NextFunc
  * Decline a friend request.
  */
 export let getDeclineFriendRequest = (req: Request, res: Response, next: NextFunction) => {
+  if (req.params.uid < 0) {
+    return res.status(400).send("Id cannot be < 0");
+  }
   User.findById(req.params.uid, (err, user: UserType) => {
     if (err) {
       return next(err);
