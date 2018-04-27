@@ -59,7 +59,7 @@ app.use(bodyParser.json({ limit: "5mb" }));
 app.use(bodyParser.urlencoded({ limit: "5mb", extended: true }));
 app.use(expressValidator());
 
-const redisPort = process.env.REDIS_PORT || 6379;
+const redisPort = Number(process.env.REDIS_PORT) || 6379;
 app.use(session({
   name: "cooper.sid",
   resave: false,
