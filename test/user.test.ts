@@ -1,7 +1,6 @@
 import * as request from "supertest";
 import * as app from "../src/app";
 import * as chai from "chai";
-import { default as User } from "../src/models/User";
 
 process.env.NODE_ENV = "test";
 
@@ -153,7 +152,6 @@ describe("GET /account", () => {
 });
 
 describe(`GET /user/search/:name`, () => {
-  let userId: number;
 
   it(`should return the user ${newUserCredentials.name}`, (done) => {
     request(app).get(`/user/search/${newUserCredentials.name}`)
@@ -165,7 +163,6 @@ describe(`GET /user/search/:name`, () => {
       expect(res.body[0]).to.haveOwnProperty("_id");
       expect(res.body[0].email).to.be.eq(newUserCredentials.email);
       expect(res.body[0].name).to.be.eq(newUserCredentials.name);
-      userId = res.body[0]._id;
       done();
     });
   });
@@ -180,7 +177,6 @@ describe(`GET /user/search/:name`, () => {
       expect(res.body[0]).to.haveOwnProperty("_id");
       expect(res.body[0].email).to.be.eq(newUserCredentials.email);
       expect(res.body[0].name).to.be.eq(newUserCredentials.name);
-      expect(res.body[0]._id).to.be.eq(userId);
       done();
     });
   });
@@ -246,7 +242,7 @@ describe("Friends", () => {
   it("GET /friend/request/-1", (done) => {
     request(app).get("/friend/request/-1")
     .set("Cookie", sessionCookie)
-    .expect(404, done);
+    .expect(400, done);
   });
 
   it("GET /friend/request/:id should return 200 OK", (done) => {
@@ -287,7 +283,7 @@ describe("Friends", () => {
   it("GET /friend/accept/-1 should return 200 OK", (done) => {
     request(app).get(`/friend/accept/-1`)
     .set("Cookie", friendCookie)
-    .expect(404, done);
+    .expect(400, done);
   });
 
   it("GET /profile/friends should return an array with one element", (done) => {

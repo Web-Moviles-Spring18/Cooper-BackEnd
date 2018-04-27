@@ -476,6 +476,16 @@ export const model = (label: string, schema: Schema) => {
       });
     }
 
+    static async removeById(id: number, next: Function) {
+      const query = `MATCH (n) WHERE ID(n) = ${id} DETACH DELETE n`;
+
+      session.run(query).subscribe({
+        onCompleted() { next(); },
+        onNext() { },
+        onError: next
+      });
+    }
+
     static async drop(next: Function) {
       const query = `MATCH (n:${label}) DETACH DELETE n`;
 

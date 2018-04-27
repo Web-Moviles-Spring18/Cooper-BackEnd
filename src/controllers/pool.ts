@@ -86,6 +86,42 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
+ * DELETE /pool/:id
+ * Deletes pool :id
+ */
+export let deletePool = (req: Request, res: Response, next: NextFunction) => {
+  if (req.params.id < 0) {
+    return res.status(404).send("id should be > 0");
+  }
+
+  Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
+    if (err) {
+      return next(err);
+    }
+    if (!pool) {
+      return res.status(404).send("Pool not found.");
+    }
+
+    req.user.hasRelationWith("owns", pool, "any", (err: Error, userOwnsPool: boolean) => {
+      if (err) {
+        return next(err);
+      }
+      if (!userOwnsPool) {
+        return res.status(403).send("You don't own this pool");
+      }
+
+      Pool.removeById(pool._id, (err: Error) => {
+        if (err) {
+          return next(err);
+        }
+
+        res.status(200).send(`Pool ${pool.name} deleted Succesfully`);
+      });
+    });
+  });
+};
+
+/**
  * POST /pool/:id
  * Update status of a user in a pool (i.e.: amount, etc.).
  * Requires owner status.
@@ -94,6 +130,10 @@ export let postUpdateUserPool = (req: Request, res: Response, next: NextFunction
   req.assert("userInfo").isJSON();
   req.assert("userInfo.debt", "Must be a number").optional().isNumeric();
   req.assert("userInfo.paid", "Must be a number").optional().isNumeric();
+
+  if (req.params.id < 0) {
+    return res.status(404).send("id should be > 0");
+  }
 
   Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
     if (err) {
@@ -151,6 +191,9 @@ export let postUpdateUserPool = (req: Request, res: Response, next: NextFunction
 export let postInvite = (req: Request, res: Response, next: NextFunction) => {
   if (req.user.email === req.body.email) {
     return res.status(400).send("You cannot invite yourself.");
+  }
+  if (req.params.id < 0) {
+    return res.status(404).send("id should be > 0");
   }
   Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
     if (err) {
@@ -218,6 +261,9 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
  * Accept Invitation to join a pool.
  */
 export let getAcceptInvite = (req: Request, res: Response, next: NextFunction) => {
+  if (req.params.id < 0) {
+    return res.status(404).send("id should be > 0");
+  }
   Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
     if (err) {
       return next(err);
@@ -246,6 +292,9 @@ export let getAcceptInvite = (req: Request, res: Response, next: NextFunction) =
  * Decline Invitation to join a pool.
  */
 export let getDeclineInvite = (req: Request, res: Response, next: NextFunction) => {
+  if (req.params.id < 0) {
+    return res.status(404).send("id should be > 0");
+  }
   Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
     if (err) {
       return next(err);
@@ -286,11 +335,15 @@ export let getPoolInvites = (req: Request, res: Response, next: NextFunction) =>
  * See pool detail.
  */
 export let getPool = (req: Request, res: Response, next: NextFunction) => {
+  if (req.params.id < 0) {
+    return res.status(404).send("id should be > 0");
+  }
   Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
     if (err) {
       return next(err);
     }
-    if (!pool || pool.private) {
+
+    if (!pool) {
       return res.status(404).send("Pool not found.");
     }
 
@@ -298,6 +351,11 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
       if (err) {
         return next(err);
       }
+
+      if (pool.private && !participants.find(rel => rel.node._id == req.user._id)) {
+        return res.status(404).send("Pool not found.");
+      }
+
       let totalPaid = 0;
       participants.forEach((pair) => {
         delete pair.node.password;
@@ -413,6 +471,9 @@ export let postPayPool = (req: Request, res: Response, next: NextFunction) => {
  * Find users with debt.
  */
 export let getUsersWithDebt = (req: Request, res: Response, next: NextFunction) => {
+  if (req.params.id < 0) {
+    return res.status(404).send("id should be > 0");
+  }
   Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
     if (err) {
       return next(err);
@@ -446,6 +507,9 @@ export let getUsersWithDebt = (req: Request, res: Response, next: NextFunction) 
  * Find users who overpaid.
  */
 export let getUsersOverpaid = (req: Request, res: Response, next: NextFunction) => {
+  if (req.params.id < 0) {
+    return res.status(404).send("id should be > 0");
+  }
   Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
     if (err) {
       return next(err);
