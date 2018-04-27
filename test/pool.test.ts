@@ -43,14 +43,14 @@ const testUser2Credential = {
   email: "test_pool@gmail.com",
   password: "pofmewpfnw",
   confirmPassword: "pofmewpfnw",
-  name: "Pool test friend"
+  name: "Pool test"
 };
 
 const testUserCredentials = {
   email: "julio.profe@gmail.com",
   password: "mamamamamamama",
   confirmPassword: "mamamamamamama",
-  name: "jesucrito el robot del futuro"
+  name: "El robot del futuro"
 };
 
 beforeAll((done) => {
