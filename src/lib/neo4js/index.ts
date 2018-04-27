@@ -10,7 +10,7 @@ export { Schema } from "./Schema";
 export { model } from "./model";
 
 export let session: any;
-export function connect({protocol = "bolt", host = "localhost", dbPath = "", port = "7474"}, {user = "neo4j", password = "neo4j"}) {
+export function connect({protocol = "bolt", host = "localhost", dbPath = "", port = 7474}, {user = "neo4j", password = "neo4j"}) {
   session = neo4j.driver(
     `${protocol}://${host}:${port}/${dbPath}`,
     neo4j.auth.basic(user, password)

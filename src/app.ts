@@ -19,9 +19,9 @@ import * as cors from "cors";
 dotenv.config();
 const RedisStore = redis(session);
 const host = process.env.HOST || "localhost";
-const neo4jPort = process.env.NEO4J_PORT || "7474";
+const port = Number(process.env.NEO4J_PORT) || 7474;
 const dbPath = `cooper_${process.env.NODE_ENV || "test"}`;
-neo.connect({ host, port: neo4jPort, dbPath }, {
+neo.connect({ host, port, dbPath }, {
   user: process.env.NEO4J_USER || "neo4j",
   password: process.env.NEO4J_PASSWORD || "neo4j",
 });
@@ -51,8 +51,8 @@ const options = {
 app.use(cors(options));
 
 // Express configuration
-app.set("port", process.env.PORT || 3000);
-app.set("securePort", process.env.SECURE_PORT || 3443);
+app.set("port", Number(process.env.PORT) || 3000);
+app.set("securePort", Number(process.env.SECURE_PORT) || 3443);
 app.use(compression());
 app.use(logger("dev"));
 app.use(bodyParser.json({ limit: "5mb" }));
