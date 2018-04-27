@@ -1,7 +1,6 @@
 import * as request from "supertest";
 import * as app from "../src/app";
 import * as chai from "chai";
-import { default as User } from "../src/models/User";
 
 process.env.NODE_ENV = "test";
 
