@@ -67,6 +67,10 @@ app.use(session({
   name: "cooper.sid",
   resave: false,
   saveUninitialized: true,
+  cookie: {
+    maxAge: 3600000,
+    expires: false
+  },
   secret: process.env.SESSION_SECRET || "redis-store-secret",
   // store: new RedisStore({ host, port: redisPort })
 }));
