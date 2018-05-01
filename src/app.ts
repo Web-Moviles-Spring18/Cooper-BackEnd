@@ -17,7 +17,7 @@ import * as cors from "cors";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
-const RedisStore = redis(session);
+// const RedisStore = redis(session);
 const host = process.env.HOST || "localhost";
 const port = Number(process.env.NEO4J_PORT) || 7687;
 const dbPath = `cooper_${process.env.NODE_ENV || "test"}`;
@@ -40,11 +40,14 @@ const app = express();
 
 // Options for cors midddleware
 const options = {
+  origin: true,
+  methods: ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"],
   allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "X-Access-Token"],
+  exposedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "X-Access-Token", "X-HTTP-Method-Override"],
   credentials: true,
-  methods: "GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE",
-  origin: "*",
-  preflightContinue: false
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+  maxAge: 3600
 };
 
 // use cors middleware
@@ -65,7 +68,7 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
   secret: process.env.SESSION_SECRET || "redis-store-secret",
-  store: new RedisStore({ host, port: redisPort })
+  // store: new RedisStore({ host, port: redisPort })
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -169,6 +172,6 @@ app.get("/auth/facebook/callback", passport.authenticate("facebook", { failureMe
 });
 
 // enable pre-flight
-app.options("*", cors(options));
+// app.options("*", cors(options));
 
 module.exports = app;

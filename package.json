@@ -44,6 +44,7 @@
     "@sendgrid/mail": "^6.2.1",
     "@types/connect-redis": "0.0.7",
     "@types/cors": "^2.8.3",
+    "@types/method-override": "0.0.31",
     "@types/passport": "^0.4.4",
     "@types/passport-facebook": "^2.1.8",
     "@types/passport-local": "^1.0.33",
