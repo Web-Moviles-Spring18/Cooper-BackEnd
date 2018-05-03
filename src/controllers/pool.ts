@@ -367,7 +367,6 @@ export let getPool = (req: Request, res: Response, next: NextFunction) => {
         }
       });
       pool.totalPaid = totalPaid;
-      delete pool.invite;
       delete pool.label;
       return res.status(200).send({ pool, participants });
     });
