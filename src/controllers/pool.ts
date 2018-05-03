@@ -569,7 +569,7 @@ export let getMyPools = (req: Request, res: Response, next: NextFunction) => {
       return next(err);
     }
     pools.forEach((pair) => {
-      //delete pair.node.invite;
+      delete pair.node.invite;
       delete pair.node.label;
     });
     return res.status(200).send(pools);
@@ -578,7 +578,7 @@ export let getMyPools = (req: Request, res: Response, next: NextFunction) => {
 
 /**
  * GET /profile/pools
- * Get all pools that the logged in user participants in.
+ * Get all pools that the logged in user is invited to.
  */
 export let getInvitedToPools = (req: Request, res: Response, next: NextFunction) => {
   req.user.getRelated("invitedTo", Pool, "out", (err: Error, pools: Relationship[]) => {
