@@ -553,7 +553,7 @@ export let searchPool = (req: Request, res: Response, next: NextFunction) => {
     if (!pools) { return res.status(404).send("No pools found."); }
     pools.forEach((pool) => {
       delete pool.label;
-      delete pool.invite;
+      //delete pool.invite;
       // TODO: Add the owner of the pool.
     });
     res.status(200).send(pools);
