@@ -75,6 +75,7 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   req.assert("location", "Location must be a string").optional().isAlphanumeric();
   req.assert("pictureURL", "PictureURL should be an URL").optional().isURL();
   req.assert("picture", "Picture should be a Base 64 string").optional().isBase64();
+  req.assert("fcmToken", "FcmToken should be alphanumeric").optional().isAlphanumeric();
 
   const errors = req.validationErrors();
 
@@ -95,6 +96,9 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   }
   if (req.body.location) {
     user.location = req.body.location;
+  }
+  if (req.body.fcmToken) {
+    user.fcmToken = req.body.fcmToken;
   }
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
