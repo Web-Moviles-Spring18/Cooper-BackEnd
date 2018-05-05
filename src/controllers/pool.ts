@@ -220,7 +220,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
           return res.status(404).send("User not found D:");
         }
 
-        pool.hasRelationWith("invitedTo", user, "in", (err: Error, hasInvitation: boolean) => {
+        pool.hasRelationWith("invitedTo", user, "any", (err: Error, hasInvitation: boolean) => {
           if (err) {
             return next(err);
           }
