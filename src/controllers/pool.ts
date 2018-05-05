@@ -665,15 +665,17 @@ export let getOwnPools = (req: Request, res: Response, next: NextFunction) => {
        if (!exists) {
          req.user.participatesIn(pool, { debt: 0, paid: 0 }).then(() => {
            res.status(200).send("Succesfully joined pool!");
-           admin.messaging().subscribeToTopic(req.user.fcmToken, pool.getTopic())
-            .then(function(response) {
-              if (process.env.NODE_ENV === "development") {
-                console.log("Successfully subscribed to topic:", response);
-              }
-            })
-            .catch(function(error) {
-              console.log("Error subscribing to topic:", error);
-            });
+           if (req.user.fcmToken) {
+             admin.messaging().subscribeToTopic(req.user.fcmToken, pool.getTopic())
+              .then(function(response) {
+                if (process.env.NODE_ENV === "development") {
+                  console.log("Successfully subscribed to topic:", response);
+                }
+              })
+              .catch(function(error) {
+                console.log("Error subscribing to topic:", error);
+              });
+           }
          }).catch((err: Error) => {
            console.error(err);
            res.status(500).send("Something went wrong.");
