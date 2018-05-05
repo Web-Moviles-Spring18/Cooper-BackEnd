@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from "express";
 import * as request from "express-validator";
 import { INode, Relationship } from "neo4js";
 import { processPayment } from "../lib/payment";
+import * as admin from "firebase-admin";
 
 import * as sgMail from "@sendgrid/mail";
 const imgur: any = require("imgur");
@@ -310,6 +311,45 @@ export let getDeclineInvite = (req: Request, res: Response, next: NextFunction) 
           return next(err);
         }
         res.status(200).send(`Invitation to ${pool.name} declined.`);
+      });
+    });
+  });
+};
+
+/**
+ * POST /profile/pools/invites
+ * Send a push notification to pool users.
+ */
+export let sendPush = (req: Request, res: Response, next: NextFunction) => {
+  Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
+    if (err) {
+      return next(err);
+    }
+    pool.hasRelationWith("owns", <any>req.user, "any", (err: Error, owns: boolean) => {
+      if (err) {
+        return next(err);
+      }
+      if (!owns) {
+        return res.status(403).send("You don't own this pool.");
+      }
+      const payload = {
+        notification: {
+          title: "Pay your debt",
+          body: `It's time for you to pay your debt to ${pool.name}!`
+        },
+        data: {
+          poolId: pool._id.toString()
+        }
+      };
+
+      admin.messaging().sendToTopic(pool.getTopic(), payload).then((response) => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("Successfully sent message: ", response);
+        }
+        res.status(200).send("Success!");
+      }).catch(function(error: Error) {
+        console.log("Error sending message:", error);
+        res.status(500).send("Something went wrong");
       });
     });
   });
@@ -625,6 +665,15 @@ export let getOwnPools = (req: Request, res: Response, next: NextFunction) => {
        if (!exists) {
          req.user.participatesIn(pool, { debt: 0, paid: 0 }).then(() => {
            res.status(200).send("Succesfully joined pool!");
+           admin.messaging().subscribeToTopic(req.user.fcmToken, pool.getTopic())
+            .then(function(response) {
+              if (process.env.NODE_ENV === "development") {
+                console.log("Successfully subscribed to topic:", response);
+              }
+            })
+            .catch(function(error) {
+              console.log("Error subscribing to topic:", error);
+            });
          }).catch((err: Error) => {
            console.error(err);
            res.status(500).send("Something went wrong.");

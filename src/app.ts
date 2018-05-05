@@ -19,12 +19,7 @@ import * as admin from "firebase-admin";
 dotenv.config();
 
 // configure FCM
-var fcmAccount = require('keys/serviceAccountKey.json');
-
-admin.initializeApp({
-  credential: admin.credential.cert(fcmAccount),
-  databaseURL: 'https://cooper-fcm.firebaseio.com'
-});
+admin.initializeApp();
 
 const host = process.env.HOST || "localhost";
 const port = Number(process.env.NEO4J_PORT) || 7687;
@@ -128,6 +123,7 @@ app.post("/pool", auth.isAuthenticated, poolController.postPool);
 app.post("/pool/:id/invite", auth.isAuthenticated, poolController.postInvite);
 app.post("/pool/:id/pay", auth.isAuthenticated, poolController.postPayPool);
 app.post("/pool/:id", auth.isAuthenticated, poolController.postUpdateUserPool);
+app.post("/pool/:id/ask_payment", auth.isAuthenticated, poolController.sendPush);
 app.delete("/pool/:id", auth.isAuthenticated, poolController.deletePool);
 app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 app.get("/pool/accept/:id", auth.isAuthenticated, poolController.getAcceptInvite);

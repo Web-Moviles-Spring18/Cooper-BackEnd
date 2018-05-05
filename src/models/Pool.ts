@@ -20,7 +20,8 @@ export type PoolType = INode & {
   starts?: Date,
   ends: Date,
   picture?: string,
-  inviteUser: (from: UserType, user: UserType, cb: (err: Error, result: any) => void) => void
+  inviteUser: (from: UserType, user: UserType, cb: (err: Error, result: any) => void) => void,
+  getTopic: () => string
 };
 
 const poolSchema = new Schema({
@@ -77,6 +78,10 @@ poolSchema.pre("save", function createInvite(next: Function) {
     next();
   });
 });
+
+poolSchema.methods.getTopic = function() {
+  return `${this._id}:${this.name}`;
+};
 
 // TODO: Update debts when new user joins.
 poolSchema.methods.inviteUser = function(from: UserType, user: UserType, cb: (err: Error, result: any) => void) {

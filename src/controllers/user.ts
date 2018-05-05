@@ -75,7 +75,6 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   req.assert("location", "Location must be a string").optional().isAlphanumeric();
   req.assert("pictureURL", "PictureURL should be an URL").optional().isURL();
   req.assert("picture", "Picture should be a Base 64 string").optional().isBase64();
-  req.assert("fcmToken", "FcmToken should be alphanumeric").optional().isAlphanumeric();
 
   const errors = req.validationErrors();
 
@@ -284,7 +283,6 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
   req.assert("pictureURL", "PictureURL should be an URL").optional().isURL();
   req.assert("picture", "Picture should be a Base 64 string").optional().isBase64();
   req.assert("gender", "Please enter 'Male' or 'Female'").optional().isIn(["Male", "Female"]);
-  req.assert("fcmToken", "FcmToken should be alphanumeric").optional().isAlphanumeric();
   const errors = req.validationErrors();
 
   if (errors) {
