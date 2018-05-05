@@ -98,6 +98,7 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   }
   if (req.body.fcmToken) {
     user.fcmToken = req.body.fcmToken;
+    console.log(`New fcmToken from ${req.body.email}: ${req.body.fcmToken}`);
   }
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
