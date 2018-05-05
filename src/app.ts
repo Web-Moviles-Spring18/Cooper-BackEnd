@@ -14,19 +14,16 @@ import * as crypto from "crypto";
 import * as neo from "./lib/neo4js";
 import * as cors from "cors";
 import * as admin from "firebase-admin";
-import * as fs from "fs";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
 
+const serviceAdmin = require("../keys/cooper-admin.js");
+
 // configure FCM
 admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: process.env.PROJECT_ID,
-    clientEmail: process.env.CLIENT_EMAIL,
-    privateKey: process.env.ADMIN_KEY
-  }),
-  databaseURL: `https://${process.env.DB_NAME}.firebaseio.com`
+  credential: admin.credential.cert(serviceAdmin),
+  databaseURL: `https://${process.env.GCLOUD_PROJECT}.firebaseio.com`
 });
 
 const host = process.env.HOST || "localhost";
