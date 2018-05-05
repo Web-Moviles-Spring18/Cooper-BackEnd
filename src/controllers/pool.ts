@@ -224,9 +224,9 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
           if (err) {
             return next(err);
           }
-          if (hasInvitation) {
-            return res.status(403).send(`${user.name || user.email} is already invited.`);
-          }
+          // if (hasInvitation) {
+          //   return res.status(403).send(`${user.name || user.email} is already invited.`);
+          // }
           pool.inviteUser(<any>req.user, user, (err, result) => {
             if (err) {
               console.error(err);
