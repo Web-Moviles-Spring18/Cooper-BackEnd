@@ -245,6 +245,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
             };
 
             // Send push notifications
+            console.log(req.user.fcmToken);
             if (req.user.fcmToken) {
               const payload = {
                 notification: {
@@ -256,6 +257,7 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
                   poolId: pool._id.toString()
                 }
               };
+              console.log(payload);
               admin.messaging().sendToDevice(req.user.fcmToken, payload).then(response => {
                 if (process.env.NODE_ENV === "development") {
                   console.log(response);
