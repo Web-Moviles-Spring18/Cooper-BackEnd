@@ -347,9 +347,9 @@ export let sendPush = (req: Request, res: Response, next: NextFunction) => {
       if (err) {
         return next(err);
       }
-      if (!owns) {
-        return res.status(403).send("You don't own this pool.");
-      }
+      // if (!owns) {
+      //   return res.status(403).send("You don't own this pool.");
+      // }
       const payload = {
         notification: {
           title: "Pay your debt",
