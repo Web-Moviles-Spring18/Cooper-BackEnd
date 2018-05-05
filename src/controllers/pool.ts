@@ -361,6 +361,7 @@ export let sendPush = (req: Request, res: Response, next: NextFunction) => {
         }
       };
 
+      console.log(pool.getTopic());
       admin.messaging().sendToTopic(pool.getTopic(), payload).then((response) => {
         if (process.env.NODE_ENV === "development") {
           console.log("Successfully sent message: ", response);

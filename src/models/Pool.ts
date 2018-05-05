@@ -78,7 +78,7 @@ poolSchema.pre("save", function createInvite(next: Function) {
 });
 
 poolSchema.methods.getTopic = function() {
-  return `/topics/${this._id}:${this.name}`;
+  return `/topics/${this._id}.${this.name}`;
 };
 
 // TODO: Update debts when new user joins.
