@@ -22,7 +22,7 @@ export let postPool = (req: Request, res: Response, next: NextFunction) => {
   req.assert("starts", "Starts must be a date").optional().toDate();
   req.assert("total", "Total must be a number").isFloat();
   req.assert("currency", "Currency must be one of usd or mxn").isIn(["usd", "mxn"]);
-  req.assert("picture", "Picture must be a base 64 string").optional().isBase64();
+  req.assert("picture", "Picture must be a base 64 string").optional();
   req.assert("pictureURL", "PictureURL must be an URL").optional().isURL();
 
   const errors = req.validationErrors();
