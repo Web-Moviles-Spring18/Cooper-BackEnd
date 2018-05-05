@@ -284,6 +284,7 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
   req.assert("pictureURL", "PictureURL should be an URL").optional().isURL();
   req.assert("picture", "Picture should be a Base 64 string").optional().isBase64();
   req.assert("gender", "Please enter 'Male' or 'Female'").optional().isIn(["Male", "Female"]);
+  req.assert("fcmToken", "FcmToken should be alphanumeric").optional().isAlphanumeric();
   const errors = req.validationErrors();
 
   if (errors) {
@@ -298,6 +299,7 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
     user.name = req.body.name || user.name || "";
     user.gender = req.body.gender || user.gender || "";
     user.location = req.body.location || user.location || "";
+    user.fcmToken = req.body.fcmToken || user.fcmToken || "";
     const saveUser = () => {
       user.save((err: Neo4jError) => {
         if (process.env.NODE_ENV == "development") {
