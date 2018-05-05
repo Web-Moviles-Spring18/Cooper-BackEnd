@@ -14,12 +14,20 @@ import * as crypto from "crypto";
 import * as neo from "./lib/neo4js";
 import * as cors from "cors";
 import * as admin from "firebase-admin";
+import * as fs from "fs";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
 
 // configure FCM
-admin.initializeApp();
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.PROJECT_ID,
+    clientEmail: process.env.CLIENT_EMAIL,
+    privateKey: process.env.ADMIN_KEY
+  }),
+  databaseURL: `https://${process.env.DB_NAME}.firebaseio.com`
+});
 
 const host = process.env.HOST || "localhost";
 const port = Number(process.env.NEO4J_PORT) || 7687;
