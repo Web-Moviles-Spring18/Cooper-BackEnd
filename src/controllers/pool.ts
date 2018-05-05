@@ -224,9 +224,9 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
           if (err) {
             return next(err);
           }
-          // if (hasInvitation) {
-          //   return res.status(403).send(`${user.name || user.email} is already invited.`);
-          // }
+          if (hasInvitation) {
+            return res.status(403).send(`${user.name || user.email} is already invited.`);
+          }
           pool.inviteUser(<any>req.user, user, (err, result) => {
             if (err) {
               console.error(err);
@@ -289,6 +289,7 @@ export let getAcceptInvite = (req: Request, res: Response, next: NextFunction) =
     if (err) {
       return next(err);
     }
+    // pito
     if (!pool) { return res.status(404).send(`Pool with id ${req.params.id} not found.`); }
     req.user.hasRelationWith("invitedTo", pool, "out", (err: Error, hasInivitation: boolean) => {
       if (err) {
@@ -299,6 +300,17 @@ export let getAcceptInvite = (req: Request, res: Response, next: NextFunction) =
         pool.removeRelation("invitedTo", <any>req.user, (err: Error) => {
           if (err) { next(err); }
         });
+        if (req.user.fcmToken) {
+          admin.messaging().subscribeToTopic(req.user.fcmToken, pool.getTopic())
+           .then(function(response) {
+             if (process.env.NODE_ENV === "development") {
+               console.log("Successfully subscribed to topic:", response);
+             }
+           })
+           .catch(function(error) {
+             console.log("Error subscribing to topic:", error);
+           });
+        }
         res.status(200).send(`Congratulations! You just joined ${pool.name}.`);
       }).catch((err: Error) => {
         console.error(err);
