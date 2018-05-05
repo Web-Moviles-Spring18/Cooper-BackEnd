@@ -244,12 +244,31 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
                     `You can join it clicking here: ${process.env.HOST_URI}/pool/accept/${pool.id}.` +
                     `Or you can decline it clicking here: ${process.env.HOST_URI}/pool/decline/${pool.id}.`
             };
-            sgMail.send(msg, false, (err: Error) => {
-              if (err) {
-                next(err);
-                res.status(200).send("Invitation sent!");
-              }
-            });
+
+            // Send push notifications
+            if (req.user.fcmToken) {
+              const payload = {
+                notification: {
+                  title: "Someone invited to join a pool!",
+                  body: `${req.user.name || req.user.email} invited you to ${pool.name}`
+                },
+                data: {
+                  type: "invite",
+                  poolId: pool._id.toString()
+                }
+              };
+              admin.messaging().sendToDevice(req.user.fcmToken, payload).then(response => {
+                if (process.env.NODE_ENV === "development") {
+                  console.log(response);
+                }
+                sgMail.send(msg, false, (err: Error) => {
+                  res.status(200).send("Invitation sent!");
+                });
+              }).catch(err => {
+                console.error(err);
+                res.status(500).send("Something went wrong!");
+              });
+            }
           });
         });
       });
@@ -317,7 +336,7 @@ export let getDeclineInvite = (req: Request, res: Response, next: NextFunction) 
 };
 
 /**
- * POST /profile/pools/invites
+ * POST /pool/:id/ask_payment
  * Send a push notification to pool users.
  */
 export let sendPush = (req: Request, res: Response, next: NextFunction) => {
@@ -338,6 +357,7 @@ export let sendPush = (req: Request, res: Response, next: NextFunction) => {
           body: `It's time for you to pay your debt to ${pool.name}!`
         },
         data: {
+          type: "paymentRequest",
           poolId: pool._id.toString()
         }
       };
