@@ -5,10 +5,11 @@ import * as request from "express-validator";
 import { INode, Relationship } from "neo4js";
 import { processPayment } from "../lib/payment";
 import * as admin from "firebase-admin";
-
 import * as sgMail from "@sendgrid/mail";
 const imgur: any = require("imgur");
 imgur.setClientId(process.env.IMGUR_CLIENT_ID);
+
+admin.initializeApp();
 
 /**
  * POST /pool
