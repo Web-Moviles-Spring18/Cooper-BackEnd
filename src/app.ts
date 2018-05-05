@@ -7,17 +7,20 @@ import * as lusca from "lusca";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as passport from "passport";
-import * as redis from "connect-redis";
 import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
 import * as bcrypt from "bcrypt-nodejs";
 import * as crypto from "crypto";
 import * as neo from "./lib/neo4js";
 import * as cors from "cors";
+import * as admin from "firebase-admin";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
-// const RedisStore = redis(session);
+
+// configure FCM
+admin.initializeApp();
+
 const host = process.env.HOST || "localhost";
 const port = Number(process.env.NEO4J_PORT) || 7687;
 const dbPath = `cooper_${process.env.NODE_ENV || "test"}`;
@@ -62,7 +65,6 @@ app.use(bodyParser.json({ limit: "5mb" }));
 app.use(bodyParser.urlencoded({ limit: "5mb", extended: true }));
 app.use(expressValidator());
 
-const redisPort = Number(process.env.REDIS_PORT) || 6379;
 app.use(session({
   name: "cooper.sid",
   resave: false,
@@ -71,8 +73,7 @@ app.use(session({
     maxAge: 3600000,
     expires: false
   },
-  secret: process.env.SESSION_SECRET || "redis-store-secret",
-  // store: new RedisStore({ host, port: redisPort })
+  secret: process.env.SESSION_SECRET || "redis-store-secret"
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -122,6 +123,7 @@ app.post("/pool", auth.isAuthenticated, poolController.postPool);
 app.post("/pool/:id/invite", auth.isAuthenticated, poolController.postInvite);
 app.post("/pool/:id/pay", auth.isAuthenticated, poolController.postPayPool);
 app.post("/pool/:id", auth.isAuthenticated, poolController.postUpdateUserPool);
+app.post("/pool/:id/ask_payment", auth.isAuthenticated, poolController.sendPush);
 app.delete("/pool/:id", auth.isAuthenticated, poolController.deletePool);
 app.get("/join/:invite", auth.isAuthenticated, poolController.getJoinPool);
 app.get("/pool/accept/:id", auth.isAuthenticated, poolController.getAcceptInvite);

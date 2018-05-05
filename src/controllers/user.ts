@@ -96,6 +96,10 @@ export let signup = (req: Request, res: Response, next: NextFunction) => {
   if (req.body.location) {
     user.location = req.body.location;
   }
+  if (req.body.fcmToken) {
+    user.fcmToken = req.body.fcmToken;
+    console.log(`New fcmToken from ${req.body.email}: ${req.body.fcmToken}`);
+  }
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { next(err); }
@@ -294,6 +298,7 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
     user.name = req.body.name || user.name || "";
     user.gender = req.body.gender || user.gender || "";
     user.location = req.body.location || user.location || "";
+    user.fcmToken = req.body.fcmToken || user.fcmToken || "";
     const saveUser = () => {
       user.save((err: Neo4jError) => {
         if (process.env.NODE_ENV == "development") {

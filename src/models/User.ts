@@ -16,6 +16,7 @@ export type UserType = INode & {
   password: string,
   passwordResetToken?: string,
   passwordResetExpires?: number
+  fcmToken?: string,
   tokens?: AuthToken[],
   facebook?: string,
   twitter?: string,
@@ -48,6 +49,7 @@ const userSchema = new Schema({
     required: true
   },
   customer: String,
+  fcmToken: String,
   passwordResetToken: String,
   passwordResetExpires: Number,
   tokens: String,

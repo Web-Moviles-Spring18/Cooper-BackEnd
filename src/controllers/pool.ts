@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from "express";
 import * as request from "express-validator";
 import { INode, Relationship } from "neo4js";
 import { processPayment } from "../lib/payment";
+import * as admin from "firebase-admin";
 
 import * as sgMail from "@sendgrid/mail";
 const imgur: any = require("imgur");
@@ -243,12 +244,31 @@ export let postInvite = (req: Request, res: Response, next: NextFunction) => {
                     `You can join it clicking here: ${process.env.HOST_URI}/pool/accept/${pool.id}.` +
                     `Or you can decline it clicking here: ${process.env.HOST_URI}/pool/decline/${pool.id}.`
             };
-            sgMail.send(msg, false, (err: Error) => {
-              if (err) {
-                next(err);
-                res.status(200).send("Invitation sent!");
-              }
-            });
+
+            // Send push notifications
+            if (req.user.fcmToken) {
+              const payload = {
+                notification: {
+                  title: "Someone invited to join a pool!",
+                  body: `${req.user.name || req.user.email} invited you to ${pool.name}`
+                },
+                data: {
+                  type: "invite",
+                  poolId: pool._id.toString()
+                }
+              };
+              admin.messaging().sendToDevice(req.user.fcmToken, payload).then(response => {
+                if (process.env.NODE_ENV === "development") {
+                  console.log(response);
+                }
+                sgMail.send(msg, false, (err: Error) => {
+                  res.status(200).send("Invitation sent!");
+                });
+              }).catch(err => {
+                console.error(err);
+                res.status(500).send("Something went wrong!");
+              });
+            }
           });
         });
       });
@@ -310,6 +330,46 @@ export let getDeclineInvite = (req: Request, res: Response, next: NextFunction) 
           return next(err);
         }
         res.status(200).send(`Invitation to ${pool.name} declined.`);
+      });
+    });
+  });
+};
+
+/**
+ * POST /pool/:id/ask_payment
+ * Send a push notification to pool users.
+ */
+export let sendPush = (req: Request, res: Response, next: NextFunction) => {
+  Pool.findById(req.params.id, (err: Error, pool: PoolType) => {
+    if (err) {
+      return next(err);
+    }
+    pool.hasRelationWith("owns", <any>req.user, "any", (err: Error, owns: boolean) => {
+      if (err) {
+        return next(err);
+      }
+      if (!owns) {
+        return res.status(403).send("You don't own this pool.");
+      }
+      const payload = {
+        notification: {
+          title: "Pay your debt",
+          body: `It's time for you to pay your debt to ${pool.name}!`
+        },
+        data: {
+          type: "paymentRequest",
+          poolId: pool._id.toString()
+        }
+      };
+
+      admin.messaging().sendToTopic(pool.getTopic(), payload).then((response) => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("Successfully sent message: ", response);
+        }
+        res.status(200).send("Success!");
+      }).catch(function(error: Error) {
+        console.log("Error sending message:", error);
+        res.status(500).send("Something went wrong");
       });
     });
   });
@@ -625,6 +685,17 @@ export let getOwnPools = (req: Request, res: Response, next: NextFunction) => {
        if (!exists) {
          req.user.participatesIn(pool, { debt: 0, paid: 0 }).then(() => {
            res.status(200).send("Succesfully joined pool!");
+           if (req.user.fcmToken) {
+             admin.messaging().subscribeToTopic(req.user.fcmToken, pool.getTopic())
+              .then(function(response) {
+                if (process.env.NODE_ENV === "development") {
+                  console.log("Successfully subscribed to topic:", response);
+                }
+              })
+              .catch(function(error) {
+                console.log("Error subscribing to topic:", error);
+              });
+           }
          }).catch((err: Error) => {
            console.error(err);
            res.status(500).send("Something went wrong.");
