@@ -9,8 +9,6 @@ import * as sgMail from "@sendgrid/mail";
 const imgur: any = require("imgur");
 imgur.setClientId(process.env.IMGUR_CLIENT_ID);
 
-admin.initializeApp();
-
 /**
  * POST /pool
  * Create a new pool.
